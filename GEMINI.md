@@ -15,13 +15,18 @@ It serves as a bridge to the established guidelines in `CLAUDE.md`.
 - **Backend**: Strapi 5.23.1 + PostgreSQL + REST API + MercadoPago
 - **Package Manager**: pnpm (always use pnpm for commands)
 
-## Active Tasks (feat/improve-filtering-products)
+## Active Tasks (feat/meta-pixel-tag)
 
-- [x] Audit current filtering implementation in `use-product-filters.ts` and `products-page.tsx`
-- [ ] Improve URL parameter handling and synchronization
-- [x] Enhance UX for multi-select filters (decoupled labels from backend values)
-- [ ] Optimize filter performance (debounce search, memoize results)
-- [ ] Validate responsive design for filter sidebar
+- [ ] Optimize Meta Pixel implementation for SPA (route changes)
+- [ ] Implement e-commerce events (`AddToCart`, `ViewContent`, `Purchase`)
+- [ ] Move noscript tag to body in `index.html`
+
+## Completed/Paused Tasks (feat/improve-filtering-products)
+
+- [x] Audit current filtering implementation
+- [x] Enhance UX for multi-select filters
+- [ ] Improve URL parameter handling (Paused)
+- [ ] Optimize filter performance (Paused)
 
 ## Session Log (2026-04-16)
 
