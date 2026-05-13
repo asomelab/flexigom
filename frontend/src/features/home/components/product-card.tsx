@@ -23,7 +23,8 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, className }: ProductCardProps) {
-  const images = product.images && Array.isArray(product.images) ? product.images : [];
+  const images =
+    product.images && Array.isArray(product.images) ? product.images : [];
   const imageUrl = getImageUrl(images[0]?.url);
   const price = Number(product.price) || 0;
   const discountPrice = Number(product.discount_price) || 0;
@@ -61,13 +62,23 @@ export function ProductCard({ product, className }: ProductCardProps) {
       <div className="relative flex justify-center items-center bg-gray-100 aspect-square overflow-hidden group/image">
         {images.length > 1 ? (
           <div className="w-full h-full flex flex-col relative select-none">
-            <Carousel setApi={setApi} className="w-full h-full" opts={{ loop: true }}>
+            <Carousel
+              setApi={setApi}
+              className="w-full h-full"
+              opts={{ loop: true }}
+            >
               <CarouselContent className="h-full ml-0">
                 {images.map((img, index) => (
-                  <CarouselItem key={img.id || index} className="h-full pl-0 relative overflow-hidden">
+                  <CarouselItem
+                    key={img.id || index}
+                    className="h-full pl-0 relative overflow-hidden"
+                  >
                     <img
                       src={getImageUrl(img.url) || undefined}
-                      alt={img.alternativeText || `Imagen ${index + 1} de ${product.name}`}
+                      alt={
+                        img.alternativeText ||
+                        `Imagen ${index + 1} de ${product.name}`
+                      }
                       className="w-full h-full object-cover group-hover/image:scale-105 transition-transform duration-500"
                       loading={index === 0 ? "eager" : "lazy"}
                     />
@@ -78,16 +89,22 @@ export function ProductCard({ product, className }: ProductCardProps) {
               <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center justify-between px-2 opacity-0 group-hover/image:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
                 <CarouselPrevious
                   className="relative inset-0 translate-x-0 translate-y-0 h-8 w-8 scale-90 md:scale-100 bg-white/90 hover:bg-white pointer-events-auto border-none shadow-md text-gray-700 hover:text-gray-900"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); api?.scrollPrev(); }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    api?.scrollPrev();
+                  }}
                 />
                 <CarouselNext
                   className="relative inset-0 translate-x-0 translate-y-0 h-8 w-8 scale-90 md:scale-100 bg-white/90 hover:bg-white pointer-events-auto border-none shadow-md text-gray-700 hover:text-gray-900"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); api?.scrollNext(); }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    api?.scrollNext();
+                  }}
                 />
               </div>
             </Carousel>
-
-
           </div>
         ) : imageUrl ? (
           <img
@@ -100,7 +117,11 @@ export function ProductCard({ product, className }: ProductCardProps) {
             loading="lazy"
           />
         ) : (
-          <img src="/flexigom.png" alt={product.name} className="w-2/3 h-auto opacity-50" />
+          <img
+            src="/flexigom.png"
+            alt={product.name}
+            className="w-2/3 h-auto opacity-50"
+          />
         )}
 
         {hasDiscount && (
@@ -122,7 +143,10 @@ export function ProductCard({ product, className }: ProductCardProps) {
           {/* Brand, category, composition and measurement tags */}
           <div className="flex flex-wrap gap-1">
             {product.brand && (
-              <Badge variant="destructive" className="text-xs max-w-full truncate">
+              <Badge
+                variant="destructive"
+                className="text-xs max-w-full truncate"
+              >
                 {product.brand.charAt(0).toUpperCase() + product.brand.slice(1)}
               </Badge>
             )}
@@ -132,12 +156,18 @@ export function ProductCard({ product, className }: ProductCardProps) {
               </Badge>
             )}
             {product.composition && (
-              <Badge variant="secondary" className="text-xs max-w-full truncate">
+              <Badge
+                variant="secondary"
+                className="text-xs max-w-full truncate"
+              >
                 {product.composition}
               </Badge>
             )}
             {product.measurement && (
-              <Badge variant="default" className="text-[10px] lg:text-xs capitalize max-w-full truncate">
+              <Badge
+                variant="default"
+                className="text-[10px] lg:text-xs capitalize max-w-full truncate"
+              >
                 {getMeasurementLabel(product.measurement)}
               </Badge>
             )}
@@ -203,7 +233,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
               "flex-[3] flex font-medium text-white items-center justify-center h-8 sm:h-10 rounded-md transition-colors text-xs sm:text-sm",
               isAdded
                 ? "bg-green-600 hover:bg-green-700"
-                : "bg-red-600 hover:bg-red-700 disabled:bg-gray-400"
+                : "bg-red-600 hover:bg-red-700 disabled:bg-gray-400",
             )}
             disabled={product.stock <= 0 || isSyncing}
           >

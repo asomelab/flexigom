@@ -209,7 +209,7 @@ export class ProductService {
           populate: ["categories", "images"],
         },
       });
-      
+
       const products = response.data.data || [];
       return products.length > 0 ? products[0] : null;
     } catch (error) {
@@ -285,24 +285,27 @@ export class ProductService {
       const populate = ["categories", "images"];
 
       if (categorySlug) {
-        const categoryResponse = await api.get<StrapiResponse<Product[]>>("/products", {
-          params: {
-            populate,
-            filters: {
-              categories: {
-                slug: {
-                  $eq: categorySlug,
+        const categoryResponse = await api.get<StrapiResponse<Product[]>>(
+          "/products",
+          {
+            params: {
+              populate,
+              filters: {
+                categories: {
+                  slug: {
+                    $eq: categorySlug,
+                  },
+                },
+                documentId: {
+                  $ne: currentDocumentId,
                 },
               },
-              documentId: {
-                $ne: currentDocumentId,
+              pagination: {
+                pageSize: limit,
               },
             },
-            pagination: {
-              pageSize: limit,
-            },
           },
-        });
+        );
         similarProducts = categoryResponse.data.data || [];
       }
 
@@ -313,27 +316,36 @@ export class ProductService {
           ...similarProducts.map((p) => p.documentId),
         ];
 
-        const fallbackResponse = await api.get<StrapiResponse<Product[]>>("/products", {
-          params: {
-            populate,
-            filters: {
-              documentId: {
-                $notIn: excludeIds,
+        const fallbackResponse = await api.get<StrapiResponse<Product[]>>(
+          "/products",
+          {
+            params: {
+              populate,
+              filters: {
+                documentId: {
+                  $notIn: excludeIds,
+                },
               },
+              pagination: {
+                pageSize: remainingLimit,
+              },
+              sort: "createdAt:desc",
             },
-            pagination: {
-              pageSize: remainingLimit,
-            },
-            sort: "createdAt:desc",
           },
-        });
+        );
 
-        similarProducts = [...similarProducts, ...(fallbackResponse.data.data || [])];
+        similarProducts = [
+          ...similarProducts,
+          ...(fallbackResponse.data.data || []),
+        ];
       }
 
       return similarProducts;
-    } catch (error: any) {
-      console.error("Error fetching similar products:", error.response?.data || error.message);
+    } catch (error) {
+      console.error(
+        "Error fetching similar products:",
+        error instanceof Error ? error.message : String(error),
+      );
       return [];
     }
   }

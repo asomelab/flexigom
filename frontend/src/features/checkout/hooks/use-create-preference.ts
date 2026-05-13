@@ -42,10 +42,14 @@ export function useCreatePreference() {
           quantity: item.quantity,
           unit_price: price,
           description: [
-            typeof item.product.description === "string" ? item.product.description : "",
+            typeof item.product.description === "string"
+              ? item.product.description
+              : "",
             item.composition ? `Composición: ${item.composition}` : "",
             item.measurement ? `Medida: ${item.measurement}` : "",
-          ].filter(Boolean).join(" | "),
+          ]
+            .filter(Boolean)
+            .join(" | "),
           category_id: item.product.categories?.[0]?.name || undefined,
         };
       });

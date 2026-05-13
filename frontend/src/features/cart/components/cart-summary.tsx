@@ -30,8 +30,6 @@ export function CartSummary({
         </div>
       )}
 
-
-
       {shipping > 0 && (
         <div className="flex justify-between items-center text-sm">
           <span className="text-muted-foreground">Envío</span>

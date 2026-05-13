@@ -44,7 +44,11 @@ export function buildPreferenceRequest(params: {
     phone?: string;
     documentType?: "DNI" | "CUIT";
     documentNumber?: string;
-    fiscalCategory?: "CONSUMIDOR_FINAL" | "RESPONSABLE_INSCRIPTO" | "EXENTO" | "MONOTRIBUTISTA";
+    fiscalCategory?:
+      | "CONSUMIDOR_FINAL"
+      | "RESPONSABLE_INSCRIPTO"
+      | "EXENTO"
+      | "MONOTRIBUTISTA";
     address?: string;
     city?: string;
     province?: string;

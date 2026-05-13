@@ -17,9 +17,9 @@ It serves as a bridge to the established guidelines in `CLAUDE.md`.
 
 ## Active Tasks (feat/meta-pixel-tag)
 
-- [ ] Optimize Meta Pixel implementation for SPA (route changes)
-- [ ] Implement e-commerce events (`AddToCart`, `ViewContent`, `Purchase`)
-- [ ] Move noscript tag to body in `index.html`
+- [x] Optimize Meta Pixel implementation for SPA (route changes)
+- [x] Implement e-commerce events (`AddToCart`, `ViewContent`, `Purchase`)
+- [x] Move noscript tag to body in `index.html`
 
 ## Completed/Paused Tasks (feat/improve-filtering-products)
 

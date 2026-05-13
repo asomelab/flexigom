@@ -4,6 +4,7 @@ import type { Product } from "@/types";
 import type { CartState } from "../types";
 import api from "@/lib/api";
 import { toast } from "sonner";
+import { pixel } from "@/lib/meta-pixel";
 
 /**
  * Tax rate (21% IVA in Argentina)
@@ -27,7 +28,7 @@ export const useCartStore = create<CartState>()(
       fetchCart: async () => {
         set({ isSyncing: true }, false, "fetchCart/start");
         try {
-          const { data } = await api.get('/cart/my-cart');
+          const { data } = await api.get("/cart/my-cart");
           set({ items: data.data?.items || [] }, false, "fetchCart/success");
         } catch (error) {
           console.error("Failed to fetch cart:", error);
@@ -40,7 +41,11 @@ export const useCartStore = create<CartState>()(
       /**
        * Add item to cart or update quantity if already exists via backend
        */
-      addItem: async (product: Product, quantity = 1, baseType?: 'Económica' | 'Reforzada') => {
+      addItem: async (
+        product: Product,
+        quantity = 1,
+        baseType?: "Económica" | "Reforzada",
+      ) => {
         set({ isSyncing: true }, false, "addItem/start");
         try {
           const payload = {
@@ -50,10 +55,32 @@ export const useCartStore = create<CartState>()(
             measurement: product.measurement,
             base_type: baseType,
           };
-          
-          const { data } = await api.post('/cart/items', payload);
+
+          const { data } = await api.post("/cart/items", payload);
           // Backend returns the full updated cart
           set({ items: data.data?.items || [] }, false, "addItem/success");
+
+          // Track AddToCart event
+          const isReinforced =
+            product.has_base_options && baseType === "Reforzada";
+          const price = isReinforced
+            ? Number(product.reinforced_base_price) ||
+              Number(product.price) ||
+              0
+            : Number(product.price) || 0;
+          const discountPrice = isReinforced
+            ? Number(product.reinforced_base_discount_price) || 0
+            : Number(product.discount_price) || 0;
+          const finalPrice =
+            discountPrice > 0 && discountPrice < price ? discountPrice : price;
+
+          pixel.addToCart({
+            content_ids: [product.documentId],
+            content_name: product.name,
+            content_type: "product",
+            value: finalPrice * quantity,
+            currency: "ARS",
+          });
         } catch (error) {
           console.error("Failed to add item:", error);
           toast.error("Error al agregar al carrito");
@@ -91,7 +118,11 @@ export const useCartStore = create<CartState>()(
           } else {
             response = await api.patch(`/cart/items/${itemId}`, { quantity });
           }
-          set({ items: response.data.data?.items || [] }, false, "updateQuantity/success");
+          set(
+            { items: response.data.data?.items || [] },
+            false,
+            "updateQuantity/success",
+          );
         } catch (error) {
           console.error("Failed to update cart quantity:", error);
           toast.error("Error al actualizar la cantidad");
@@ -106,7 +137,7 @@ export const useCartStore = create<CartState>()(
       clearCart: async () => {
         set({ isSyncing: true }, false, "clearCart/start");
         try {
-          const { data } = await api.delete('/cart');
+          const { data } = await api.delete("/cart");
           set({ items: data.data?.items || [] }, false, "clearCart/success");
         } catch (error) {
           console.error("Failed to clear cart:", error);
@@ -131,9 +162,11 @@ export const useCartStore = create<CartState>()(
         return get().items.reduce((total, item) => {
           // Fallback to front-end calc if item.price is not populated by backend yet
           let price = Number(item.price);
-          
+
           if (!price && item.product) {
-             price = item.product.discount_price > 0 && item.product.discount_price < item.product.price
+            price =
+              item.product.discount_price > 0 &&
+              item.product.discount_price < item.product.price
                 ? item.product.discount_price
                 : item.product.price;
           }
@@ -162,7 +195,9 @@ export const useCartStore = create<CartState>()(
        */
       getItem: (productId: string) => {
         return get().items.find(
-          (item) => item.product?.documentId === productId || item.productId === productId
+          (item) =>
+            item.product?.documentId === productId ||
+            item.productId === productId,
         );
       },
     }),
