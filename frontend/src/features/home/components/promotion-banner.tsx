@@ -16,8 +16,7 @@ export function PromotionBanner() {
     <div className="bg-red-700 text-primary-foreground px-2 py-4 text-center text-sm">
       <p>
         <span className="font-bold">{banner.title}</span> - {banner.description}
-        {banner.discount > 0 && ` (${banner.discount}% OFF)`}
-        {" "}
+        {banner.discount > 0 && ` (${banner.discount}% OFF)`}{" "}
         <a href={banner.ctaUrl} className="underline hover:no-underline">
           {banner.ctaText}
         </a>

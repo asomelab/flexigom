@@ -46,7 +46,6 @@ export interface PromotionBanner extends StrapiEntity {
   title: string;
   description: string;
   discount: number;
-
 }
 export interface HeroSectionProps {
   content?: Partial<HeroContent>;

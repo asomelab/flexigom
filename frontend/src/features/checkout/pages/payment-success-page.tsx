@@ -9,6 +9,7 @@ import { CheckCircle, Package, Home, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useCartStore } from "@/features/cart/store/cart-store";
+import { pixel } from "@/lib/meta-pixel";
 
 export function PaymentSuccessPage() {
   const navigate = useNavigate();
@@ -24,9 +25,20 @@ export function PaymentSuccessPage() {
   // Clear cart on successful payment
   useEffect(() => {
     if (status === "approved") {
+      const total = useCartStore.getState().getTotal();
+
+      // Track Purchase event (only if there is a valid total to avoid duplicate tracking on reload)
+      if (total > 0) {
+        pixel.purchase({
+          value: total,
+          currency: "ARS",
+          order_id: externalReference || merchantOrderId || undefined,
+        });
+      }
+
       clearCart();
     }
-  }, [status, clearCart]);
+  }, [status, clearCart, externalReference, merchantOrderId]);
 
   return (
     <div className="mx-auto px-4 py-12 container">
