@@ -7,13 +7,11 @@ import * as webhookUtils from "../utils/webhook";
 
 // Types for the preference creation
 export interface PreferenceItem {
-  title: string;
+  productId: string;
   quantity: number;
-  unit_price: number;
-  currency_id?: string;
-  description?: string;
-  picture_url?: string;
-  category_id?: string;
+  composition?: string;
+  measurement?: string;
+  base_type?: "Económica" | "Reforzada";
 }
 
 export interface PreferencePayer {
@@ -37,6 +35,7 @@ export interface PreferencePayer {
 
 export interface CreatePreferenceRequest {
   items: PreferenceItem[];
+  couponCode?: string;
   payer?: PreferencePayer;
   external_reference?: string;
   notification_url?: string;
@@ -93,18 +92,104 @@ export default () => ({
         process.env.MERCADOPAGO_PENDING_URL ||
         "http://localhost:5173/checkout/pending";
 
+      let subtotal = 0;
+      const mpItems: any[] = [];
+
+      // Calculate total securely from backend prices
+      for (const item of data.items) {
+        // Fetch product from DB
+        const product = await strapi.db.query('api::product.product').findOne({
+          where: { documentId: item.productId },
+          populate: ['categories', 'images']
+        });
+
+        if (!product) {
+          throw new Error(`Product not found: ${item.productId}`);
+        }
+
+        // Calculate unit price based on rules
+        const isReinforced = product.has_base_options && item.base_type === "Reforzada";
+        const basePrice = isReinforced
+          ? Number(product.reinforced_base_price) || Number(product.price) || 0
+          : Number(product.price) || 0;
+          
+        const discountPrice = isReinforced
+          ? Number(product.reinforced_base_discount_price) || 0
+          : Number(product.discount_price) || 0;
+          
+        const finalPrice = discountPrice > 0 && discountPrice < basePrice ? discountPrice : basePrice;
+
+        const descriptionParts = [];
+        if (typeof product.description === "string") descriptionParts.push(product.description);
+        if (item.composition) descriptionParts.push(`Composición: ${item.composition}`);
+        if (item.measurement) descriptionParts.push(`Medida: ${item.measurement}`);
+
+        mpItems.push({
+          id: item.productId,
+          title: product.name,
+          quantity: item.quantity,
+          unit_price: finalPrice,
+          currency_id: "ARS",
+          description: descriptionParts.join(" | ") || undefined,
+          category_id: product.categories?.[0]?.name || undefined,
+        });
+
+        subtotal += finalPrice * item.quantity;
+      }
+
+      let discountAmount = 0;
+      let finalTotal = subtotal;
+
+      // Handle coupon
+      if (data.couponCode) {
+        const coupon = await strapi.db.query('api::coupon.coupon').findOne({
+          where: { code: data.couponCode, isActive: true }
+        });
+
+        if (coupon) {
+          const now = new Date();
+          let isExpired = false;
+          if (coupon.expirationDate) {
+             const expDate = new Date(coupon.expirationDate);
+             if (now > expDate) isExpired = true;
+          }
+
+          if (!isExpired) {
+            if (coupon.type === 'percentage') {
+              discountAmount = subtotal * (Number(coupon.value) / 100);
+            } else if (coupon.type === 'fixed') {
+              discountAmount = Number(coupon.value);
+            }
+          }
+        }
+      }
+
+      finalTotal = Math.max(0, subtotal - discountAmount);
+
+      if (finalTotal === 0 && subtotal > 0) {
+        throw new Error("Total cannot be 0 when using MercadoPago");
+      }
+
+      if (discountAmount > 0 && subtotal > 0 && finalTotal > 0) {
+        const discountFactor = finalTotal / subtotal;
+        let runningTotal = 0;
+        
+        for (let i = 0; i < mpItems.length; i++) {
+          const item = mpItems[i];
+          if (i === mpItems.length - 1) {
+            const remainingToTarget = finalTotal - runningTotal;
+            item.unit_price = Math.max(0, Number((remainingToTarget / item.quantity).toFixed(2)));
+          } else {
+            const discountedPrice = Number((item.unit_price * discountFactor).toFixed(2));
+            item.unit_price = discountedPrice;
+            runningTotal += discountedPrice * item.quantity;
+          }
+        }
+      }
+
       // Create the preference body
       const preferenceBody: any = {
-        items: data.items.map((item, index) => ({
-          id: `item-${index}`,
-          title: item.title,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          currency_id: item.currency_id || "ARS",
-          description: item.description,
-          picture_url: item.picture_url,
-          category_id: item.category_id,
-        })),
+        items: mpItems,
         back_urls: {
           success: successUrl,
           failure: failureUrl,

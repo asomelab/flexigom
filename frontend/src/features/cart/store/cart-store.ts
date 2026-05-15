@@ -21,6 +21,21 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       items: [],
       isSyncing: false,
+      appliedCoupon: null,
+
+      /**
+       * Apply a discount coupon
+       */
+      applyCoupon: (coupon) => {
+        set({ appliedCoupon: coupon }, false, "applyCoupon");
+      },
+
+      /**
+       * Remove the applied discount coupon
+       */
+      removeCoupon: () => {
+        set({ appliedCoupon: null }, false, "removeCoupon");
+      },
 
       /**
        * Fetch active cart from Strapi
@@ -187,7 +202,19 @@ export const useCartStore = create<CartState>()(
        * Note: Tax is now 0 as it's already included in product prices
        */
       getTotal: () => {
-        return get().getSubtotal();
+        const subtotal = get().getSubtotal();
+        const coupon = get().appliedCoupon;
+        let discount = 0;
+        
+        if (coupon) {
+          if (coupon.type === 'percentage') {
+            discount = subtotal * (Number(coupon.value) / 100);
+          } else if (coupon.type === 'fixed') {
+            discount = Number(coupon.value);
+          }
+        }
+        
+        return Math.max(0, subtotal - discount);
       },
 
       /**
@@ -217,3 +244,4 @@ export const selectCartTotal = (state: CartState) => state.getTotal();
 export const selectCartIsSyncing = (state: CartState) => state.isSyncing;
 export const selectCartItem = (productId: string) => (state: CartState) =>
   state.getItem(productId);
+export const selectAppliedCoupon = (state: CartState) => state.appliedCoupon;

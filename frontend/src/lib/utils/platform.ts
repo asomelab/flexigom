@@ -90,6 +90,8 @@ export const isShortcutPressed = (
   event: KeyboardEvent,
   key: string,
 ): boolean => {
+  if (!event.key) return false;
+
   const targetKey = key.toLowerCase();
   const eventKey = event.key.toLowerCase();
 
