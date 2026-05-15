@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { useCreatePreference } from "../hooks/use-create-preference";
 import type { CartItem, ShippingFormData } from "@/features/cart/types";
+import type { Coupon } from "@/features/cart/types/cart-types";
 
 interface MercadoPagoCheckoutButtonProps {
   cartItems: CartItem[];
   shippingData: ShippingFormData;
+  appliedCoupon?: Coupon | null;
   externalReference?: string;
   disabled?: boolean;
   className?: string;
@@ -20,6 +22,7 @@ interface MercadoPagoCheckoutButtonProps {
 export function MercadoPagoCheckoutButton({
   cartItems,
   shippingData,
+  appliedCoupon,
   externalReference,
   disabled = false,
   className = "",
@@ -46,6 +49,7 @@ export function MercadoPagoCheckoutButton({
     createPreference({
       cartItems,
       shippingData,
+      couponCode: appliedCoupon?.code,
       externalReference: externalReference || `ORDER-${Date.now()}`,
     });
   };

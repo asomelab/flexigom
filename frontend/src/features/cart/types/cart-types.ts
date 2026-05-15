@@ -18,11 +18,23 @@ export interface CartItem {
 }
 
 /**
+ * Discount coupon definition
+ */
+export interface Coupon {
+  id?: number | string;
+  code: string;
+  type: "percentage" | "fixed";
+  value: number;
+  isActive: boolean;
+}
+
+/**
  * Cart state managed by Zustand
  */
 export interface CartState {
   items: CartItem[];
   isSyncing: boolean;
+  appliedCoupon: Coupon | null;
   // Actions
   fetchCart: () => Promise<void>;
   addItem: (
@@ -33,6 +45,8 @@ export interface CartState {
   removeItem: (itemId: string) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
+  applyCoupon: (coupon: Coupon) => void;
+  removeCoupon: () => void;
   // Computed getters
   getItemCount: () => number;
   getSubtotal: () => number;
