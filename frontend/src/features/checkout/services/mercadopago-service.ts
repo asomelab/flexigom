@@ -31,12 +31,13 @@ export async function createPaymentPreference(
  */
 export function buildPreferenceRequest(params: {
   items: Array<{
-    title: string;
+    productId: string;
     quantity: number;
-    unit_price: number;
-    description?: string;
-    category_id?: string;
+    composition?: string;
+    measurement?: string;
+    base_type?: "Económica" | "Reforzada";
   }>;
+  couponCode?: string;
   payer?: {
     name?: string;
     surname?: string;
@@ -44,7 +45,11 @@ export function buildPreferenceRequest(params: {
     phone?: string;
     documentType?: "DNI" | "CUIT";
     documentNumber?: string;
-    fiscalCategory?: "CONSUMIDOR_FINAL" | "RESPONSABLE_INSCRIPTO" | "EXENTO" | "MONOTRIBUTISTA";
+    fiscalCategory?:
+      | "CONSUMIDOR_FINAL"
+      | "RESPONSABLE_INSCRIPTO"
+      | "EXENTO"
+      | "MONOTRIBUTISTA";
     address?: string;
     city?: string;
     province?: string;
@@ -53,17 +58,17 @@ export function buildPreferenceRequest(params: {
   externalReference?: string;
   notificationUrl?: string;
 }): MercadoPagoPreferenceRequest {
-  const { items, payer, externalReference, notificationUrl } = params;
+  const { items, couponCode, payer, externalReference, notificationUrl } = params;
 
-  const preferenceRequest: MercadoPagoPreferenceRequest = {
+  const preferenceRequest: any = {
     items: items.map((item) => ({
-      title: item.title,
+      productId: item.productId,
       quantity: item.quantity,
-      unit_price: item.unit_price,
-      currency_id: "ARS",
-      description: item.description,
-      category_id: item.category_id,
+      composition: item.composition,
+      measurement: item.measurement,
+      base_type: item.base_type,
     })),
+    couponCode,
     external_reference: externalReference,
     notification_url: notificationUrl,
     metadata: payer?.fiscalCategory

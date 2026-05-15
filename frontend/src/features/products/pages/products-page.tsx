@@ -153,7 +153,7 @@ export function ProductsPage() {
             <BreadcrumbSeparator />
             <BreadcrumbItem>
               {(currentCategory && !filters.search?.trim()) ||
-                filters.search?.trim() ? (
+              filters.search?.trim() ? (
                 <BreadcrumbLink asChild>
                   <Link to="/productos">Productos</Link>
                 </BreadcrumbLink>

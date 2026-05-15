@@ -15,23 +15,36 @@ It serves as a bridge to the established guidelines in `CLAUDE.md`.
 - **Backend**: Strapi 5.23.1 + PostgreSQL + REST API + MercadoPago
 - **Package Manager**: pnpm (always use pnpm for commands)
 
-## Active Tasks (feat/meta-pixel-tag)
+## Active Tasks (feat/coupun-function)
 
-- [ ] Optimize Meta Pixel implementation for SPA (route changes)
-- [ ] Implement e-commerce events (`AddToCart`, `ViewContent`, `Purchase`)
-- [ ] Move noscript tag to body in `index.html`
+- [ ] Create `Promotion` or `Coupon` content type in Strapi
+- [ ] Implement coupon validation logic in the backend
+- [ ] Add coupon application UI in the frontend checkout
+- [ ] Integrate coupon discounts into order calculation and MercadoPago preference
 
-## Completed/Paused Tasks (feat/improve-filtering-products)
+## Completed/Paused Tasks
 
+### feat/strapi-plugin-backup (Paused)
+- [ ] Research and implement a backup solution for Strapi (database + uploads)
+- [ ] Configure automatic backup schedules
+- [ ] Implement manual backup trigger via admin panel or API
+
+### feat/meta-pixel-tag (Completed)
+- [x] Optimize Meta Pixel implementation for SPA (route changes)
+- [x] Implement e-commerce events (`AddToCart`, `ViewContent`, `Purchase`)
+- [x] Move noscript tag to body in `index.html`
+
+### feat/improve-filtering-products (Paused)
 - [x] Audit current filtering implementation
 - [x] Enhance UX for multi-select filters
 - [ ] Improve URL parameter handling (Paused)
 - [ ] Optimize filter performance (Paused)
 
-## Session Log (2026-04-16)
+## Session Log (2026-05-14)
 
-- **12:07 PM**: Initialized project memory via `/init`. Focus set to `feat/improve-filtering-products`.
-- **12:28 PM**: Committed decoupling of measurement labels from backend values. Added `M_` prefix handling for pillow sizes to match Strapi constraints without affecting UI aesthetics.
+- **11:46 AM**: Initialized project memory via `/init`. Branch switched to `feat/strapi-plugin-backup`. focus shifted to backend backup implementation.
+- **12:28 PM (2026-04-16)**: Committed decoupling of measurement labels from backend values. Added `M_` prefix handling for pillow sizes.
+- **06:42 PM**: Fixed database authentication error (`password authentication failed for user "postgres"`) by resolving port conflict and starting the project's Docker container. Switched to `feat/coupun-function` branch.
 
 ## Key Guidelines from CLAUDE.md
 

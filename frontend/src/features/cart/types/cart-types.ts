@@ -14,7 +14,18 @@ export interface CartItem {
   addedAt?: string; // ISO timestamp
   composition?: string;
   measurement?: string;
-  base_type?: 'Económica' | 'Reforzada';
+  base_type?: "Económica" | "Reforzada";
+}
+
+/**
+ * Discount coupon definition
+ */
+export interface Coupon {
+  id?: number | string;
+  code: string;
+  type: "percentage" | "fixed";
+  value: number;
+  isActive: boolean;
 }
 
 /**
@@ -23,12 +34,19 @@ export interface CartItem {
 export interface CartState {
   items: CartItem[];
   isSyncing: boolean;
+  appliedCoupon: Coupon | null;
   // Actions
   fetchCart: () => Promise<void>;
-  addItem: (product: Product, quantity?: number, baseType?: 'Económica' | 'Reforzada') => Promise<void>;
+  addItem: (
+    product: Product,
+    quantity?: number,
+    baseType?: "Económica" | "Reforzada",
+  ) => Promise<void>;
   removeItem: (itemId: string) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
+  applyCoupon: (coupon: Coupon) => void;
+  removeCoupon: () => void;
   // Computed getters
   getItemCount: () => number;
   getSubtotal: () => number;

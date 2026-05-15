@@ -44,10 +44,7 @@ export function CartItemComponent({ item }: CartItemProps) {
   return (
     <div className="flex gap-4 py-4 border-b last:border-b-0">
       {/* Product Image */}
-      <Link
-        to={`/productos/${product.slug}`}
-        className="flex-shrink-0"
-      >
+      <Link to={`/productos/${product.slug}`} className="flex-shrink-0">
         <div className="bg-gray-100 rounded-md w-20 h-20 overflow-hidden">
           <img
             src={imageUrl || "/flexigom.png"}
@@ -86,7 +83,11 @@ export function CartItemComponent({ item }: CartItemProps) {
             disabled={isSyncing}
             aria-label="Eliminar producto"
           >
-            {isSyncing ? <Trash2 className="w-4 h-4 animate-pulse opacity-50" /> : <Trash2 className="w-4 h-4" />}
+            {isSyncing ? (
+              <Trash2 className="w-4 h-4 animate-pulse opacity-50" />
+            ) : (
+              <Trash2 className="w-4 h-4" />
+            )}
           </Button>
         </div>
 

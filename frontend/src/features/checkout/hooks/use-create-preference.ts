@@ -18,6 +18,7 @@ import type { ShippingFormData } from "@/features/cart/types";
 export interface CreatePreferenceParams {
   cartItems: CartItem[];
   shippingData: ShippingFormData;
+  couponCode?: string;
   externalReference?: string;
 }
 
@@ -32,21 +33,15 @@ export function useCreatePreference() {
     CreatePreferenceParams
   >({
     mutationFn: async (params: CreatePreferenceParams) => {
-      const { cartItems, shippingData, externalReference } = params;
+      const { cartItems, shippingData, couponCode, externalReference } = params;
 
       const items = cartItems.map((item) => {
-        const price = Number(item.price) || 0;
-
         return {
-          title: item.product.name,
+          productId: item.product.documentId || item.productId || "",
           quantity: item.quantity,
-          unit_price: price,
-          description: [
-            typeof item.product.description === "string" ? item.product.description : "",
-            item.composition ? `Composición: ${item.composition}` : "",
-            item.measurement ? `Medida: ${item.measurement}` : "",
-          ].filter(Boolean).join(" | "),
-          category_id: item.product.categories?.[0]?.name || undefined,
+          composition: item.composition,
+          measurement: item.measurement,
+          base_type: item.base_type,
         };
       });
 
@@ -70,6 +65,7 @@ export function useCreatePreference() {
 
       const preferenceRequest = buildPreferenceRequest({
         items,
+        couponCode,
         payer,
         externalReference: externalReference || `ORDER-${Date.now()}`,
         notificationUrl,

@@ -42,7 +42,7 @@ export const shippingFormSchema = z
     {
       message: "Formato de documento inválido",
       path: ["documentNumber"],
-    }
+    },
   );
 
 export type DocumentType = z.infer<typeof documentTypeSchema>;

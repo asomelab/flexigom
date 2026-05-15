@@ -227,12 +227,13 @@ export function TestimonialsSection({
           ) : (
             /* Grid layout for 1-3 reviews */
             <div
-              className={`grid gap-6 mx-auto max-w-6xl ${sectionContent.testimonials.length === 1
-                ? "grid-cols-1 max-w-md"
-                : sectionContent.testimonials.length === 2
-                  ? "grid-cols-1 md:grid-cols-2 max-w-4xl"
-                  : "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
-                }`}
+              className={`grid gap-6 mx-auto max-w-6xl ${
+                sectionContent.testimonials.length === 1
+                  ? "grid-cols-1 max-w-md"
+                  : sectionContent.testimonials.length === 2
+                    ? "grid-cols-1 md:grid-cols-2 max-w-4xl"
+                    : "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
+              }`}
             >
               {sectionContent.testimonials.map(
                 (testimonial: Review, index: number) => (

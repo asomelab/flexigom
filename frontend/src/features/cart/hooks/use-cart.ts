@@ -26,6 +26,7 @@ export function useCart() {
       getSubtotal: state.getSubtotal,
       getTotal: state.getTotal,
       getItem: state.getItem,
+      appliedCoupon: state.appliedCoupon,
     })),
   );
 
@@ -40,6 +41,7 @@ export function useCart() {
     clearCart,
     getItem,
     isEmpty: items.length === 0,
+    appliedCoupon: useCartStore((state) => state.appliedCoupon),
   };
 }
 

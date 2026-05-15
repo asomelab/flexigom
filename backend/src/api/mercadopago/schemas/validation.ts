@@ -39,23 +39,23 @@ export const payerSchema = z
 
 // Item schema
 export const itemSchema = z.object({
-  title: z.string().min(1, "Item title cannot be empty"),
+  productId: z.string().min(1, "Product ID cannot be empty"),
 
   quantity: z
     .number()
     .int("Quantity must be an integer")
     .positive("Quantity must be greater than 0"),
 
-  unit_price: z.number().nonnegative("Unit price cannot be negative"),
-
-  currency_id: z.string().default("ARS").optional(),
-  description: z.string().optional(),
-  category_id: z.string().optional(),
+  composition: z.string().optional(),
+  measurement: z.string().optional(),
+  base_type: z.enum(["Económica", "Reforzada"]).nullish().or(z.literal("")),
 });
 
 // Create preference request schema
 export const createPreferenceSchema = z.object({
   items: z.array(itemSchema).nonempty("Items array cannot be empty"),
+
+  couponCode: z.string().optional(),
 
   payer: payerSchema,
 

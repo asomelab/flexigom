@@ -5,6 +5,7 @@ import { formatPrice, getImageUrl } from "@/lib/utils";
 import { Package, MapPin, CreditCard } from "lucide-react";
 import { useCart } from "../hooks/use-cart";
 import { MercadoPagoCheckoutButton } from "@/features/checkout";
+import { CouponInput } from "@/features/checkout/components/coupon-input";
 import type { ShippingFormData, PaymentFormData } from "../types";
 
 interface OrderSummaryProps {
@@ -30,7 +31,7 @@ export function OrderSummary({
   onBack,
   isProcessing = false,
 }: OrderSummaryProps) {
-  const { items, subtotal, total } = useCart();
+  const { items, subtotal, total, appliedCoupon } = useCart();
 
   const shippingCost = subtotal >= 50000 ? 0 : 0; // Free shipping over $50k, otherwise 0 for now
 
@@ -83,11 +84,26 @@ export function OrderSummary({
 
         <Separator className="my-4" />
 
+        <div className="mb-4">
+          <CouponInput />
+        </div>
+
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Subtotal</span>
             <span>{formatPrice(subtotal)}</span>
           </div>
+
+          {appliedCoupon && (
+            <div className="flex justify-between text-sm text-green-600">
+              <span className="font-medium">
+                Descuento ({appliedCoupon.type === 'percentage' ? `${appliedCoupon.value}%` : `$${appliedCoupon.value}`})
+              </span>
+              <span>
+                -{formatPrice(subtotal - total)}
+              </span>
+            </div>
+          )}
 
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Envío</span>
@@ -166,6 +182,7 @@ export function OrderSummary({
           <MercadoPagoCheckoutButton
             cartItems={items}
             shippingData={shippingData}
+            appliedCoupon={appliedCoupon}
             externalReference={`ORDER-${Date.now()}`}
             disabled={isProcessing}
             className="flex-1"

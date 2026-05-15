@@ -41,8 +41,9 @@ import {
   Share2,
   ChevronLeft,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { handleShare } from "@/lib/utils";
+import { pixel } from "@/lib/meta-pixel";
 import { SEOHead } from "@/components/seo";
 import { useCartStore } from "@/features/cart/store/cart-store";
 import { toast } from "sonner";
@@ -58,7 +59,9 @@ export function ProductDetailPage() {
   const { data: product, isLoading, error } = useProductBySlug(slug || "");
   const documentId = product?.documentId;
   const [quantity, setQuantity] = useState(1);
-  const [baseType, setBaseType] = useState<'Económica' | 'Reforzada'>('Económica');
+  const [baseType, setBaseType] = useState<"Económica" | "Reforzada">(
+    "Económica",
+  );
   const addItem = useCartStore((state) => state.addItem);
   const isSyncing = useCartStore((state) => state.isSyncing);
 
@@ -70,13 +73,13 @@ export function ProductDetailPage() {
   }, [product?.images]);
 
   // Calculate pricing values
-  const isReinforced = product?.has_base_options && baseType === 'Reforzada';
+  const isReinforced = product?.has_base_options && baseType === "Reforzada";
   const price = isReinforced
-    ? (Number(product?.reinforced_base_price) || Number(product?.price) || 0)
-    : (Number(product?.price) || 0);
+    ? Number(product?.reinforced_base_price) || Number(product?.price) || 0
+    : Number(product?.price) || 0;
   const discountPrice = isReinforced
-    ? (Number(product?.reinforced_base_discount_price) || 0)
-    : (Number(product?.discount_price) || 0);
+    ? Number(product?.reinforced_base_discount_price) || 0
+    : Number(product?.discount_price) || 0;
   const hasDiscount = discountPrice > 0 && discountPrice < price;
   const discountPercentage = hasDiscount
     ? Math.round(((price - discountPrice) / price) * 100)
@@ -96,11 +99,11 @@ export function ProductDetailPage() {
     const descriptionText =
       product.description && Array.isArray(product.description)
         ? product.description
-          .map(
-            (block: { children?: Array<{ text?: string }> }) =>
-              block.children?.map((child) => child.text || "").join("") || "",
-          )
-          .join(" ")
+            .map(
+              (block: { children?: Array<{ text?: string }> }) =>
+                block.children?.map((child) => child.text || "").join("") || "",
+            )
+            .join(" ")
         : typeof product.description === "string"
           ? product.description
           : undefined;
@@ -149,7 +152,21 @@ export function ProductDetailPage() {
     ]);
 
     return { seoConfig, productSchema, breadcrumbSchema };
-  }, [product, documentId, slug, images, hasDiscount, price, discountPrice, baseType]);
+  }, [product, documentId, slug, images, hasDiscount, price, discountPrice]);
+
+  // Track ViewContent event
+  useEffect(() => {
+    if (product && documentId) {
+      pixel.viewContent({
+        content_ids: [documentId],
+        content_name: product.name,
+        content_type: "product",
+        content_category: product.categories?.[0]?.name,
+        value: hasDiscount ? discountPrice : price,
+        currency: "ARS",
+      });
+    }
+  }, [product, documentId, hasDiscount, discountPrice, price]);
 
   if (isLoading) {
     return <ProductDetailSkeleton />;
@@ -184,7 +201,11 @@ export function ProductDetailPage() {
 
   const handleAddToCart = async () => {
     if (product) {
-      await addItem(product, quantity, product.has_base_options ? baseType : undefined);
+      await addItem(
+        product,
+        quantity,
+        product.has_base_options ? baseType : undefined,
+      );
       toast.success(`${product.name} agregado al carrito`, {
         description: `Cantidad: ${quantity}${product.has_base_options ? ` | Base: ${baseType}` : ""}`,
       });
@@ -448,17 +469,25 @@ export function ProductDetailPage() {
                   <RadioGroup
                     defaultValue="Económica"
                     value={baseType}
-                    onValueChange={(val) => setBaseType(val as 'Económica' | 'Reforzada')}
+                    onValueChange={(val) =>
+                      setBaseType(val as "Económica" | "Reforzada")
+                    }
                   >
                     <div className="flex items-center space-x-2 border p-3 rounded-md cursor-pointer hover:bg-gray-50 transition-colors">
                       <RadioGroupItem value="Económica" id="base-economica" />
-                      <Label htmlFor="base-economica" className="cursor-pointer w-full h-full flex-1">
+                      <Label
+                        htmlFor="base-economica"
+                        className="cursor-pointer w-full h-full flex-1"
+                      >
                         Base Económica (Ecocuero)
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2 border p-3 rounded-md cursor-pointer hover:bg-gray-50 transition-colors">
                       <RadioGroupItem value="Reforzada" id="base-reforzada" />
-                      <Label htmlFor="base-reforzada" className="cursor-pointer w-full h-full flex-1">
+                      <Label
+                        htmlFor="base-reforzada"
+                        className="cursor-pointer w-full h-full flex-1"
+                      >
                         Base Reforzada (Tela)
                       </Label>
                     </div>
@@ -516,7 +545,11 @@ export function ProductDetailPage() {
                   ) : (
                     <ShoppingCart className="mr-2 w-5 h-5" />
                   )}
-                  {product.stock > 0 ? (isSyncing ? "Agregando..." : "Agregar al Carrito") : "Sin Stock"}
+                  {product.stock > 0
+                    ? isSyncing
+                      ? "Agregando..."
+                      : "Agregar al Carrito"
+                    : "Sin Stock"}
                 </Button>
                 {/* <Button variant="outline" size="icon" className="w-12 h-12">
                   <Heart className="w-5 h-5" />

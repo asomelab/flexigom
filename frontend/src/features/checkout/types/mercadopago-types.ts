@@ -7,12 +7,11 @@
  * Item for MercadoPago preference
  */
 export interface MercadoPagoPreferenceItem {
-  title: string;
+  productId: string;
   quantity: number;
-  unit_price: number;
-  currency_id?: string;
-  description?: string;
-  category_id?: string;
+  composition?: string;
+  measurement?: string;
+  base_type?: "Económica" | "Reforzada";
 }
 
 /**
@@ -42,6 +41,7 @@ export interface MercadoPagoPreferencePayer {
  */
 export interface MercadoPagoPreferenceRequest {
   items: MercadoPagoPreferenceItem[];
+  couponCode?: string;
   payer?: MercadoPagoPreferencePayer;
   external_reference?: string;
   notification_url?: string;
