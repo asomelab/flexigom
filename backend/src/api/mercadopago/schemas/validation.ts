@@ -48,7 +48,7 @@ export const itemSchema = z.object({
 
   composition: z.string().optional(),
   measurement: z.string().optional(),
-  base_type: z.enum(["Económica", "Reforzada"]).optional(),
+  base_type: z.enum(["Económica", "Reforzada"]).nullish().or(z.literal("")),
 });
 
 // Create preference request schema
