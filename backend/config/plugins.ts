@@ -23,6 +23,7 @@ export default ({ env }: { env: any }) => ({
       awsRegion: env("BACKUP_AWS_REGION"),
       awsS3Bucket: env("BACKUP_AWS_S3_BUCKET"),
       databaseDriver: env("DATABASE_CLIENT", "postgres"),
+      pgDumpExecutable: env("PG_DUMP_EXECUTABLE", "/opt/homebrew/bin/pg_dump"),
       disableUploadsBackup: true,
       allowCleanup: true,
       cleanupCronSchedule: "0 7 * * *",
