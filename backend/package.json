@@ -34,6 +34,7 @@
     "react-dom": "^18.0.0",
     "react-router-dom": "^6.0.0",
     "resend": "^6.9.4",
+    "strapi-plugin-backup": "^2.0.3",
     "styled-components": "^6.0.0",
     "zod": "^4.1.12"
   },

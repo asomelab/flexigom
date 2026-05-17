@@ -3,7 +3,9 @@
     "allow": [
       "Bash(pnpm tsc:*)",
       "Bash(pnpm lint:*)",
-      "Skill(vercel-react-best-practices)"
+      "Skill(vercel-react-best-practices)",
+      "WebFetch(domain:market.strapi.io)",
+      "Bash(pnpm add *)"
     ],
     "deny": [],
     "ask": []
