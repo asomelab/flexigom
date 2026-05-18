@@ -15,14 +15,18 @@ It serves as a bridge to the established guidelines in `CLAUDE.md`.
 - **Backend**: Strapi 5.23.1 + PostgreSQL + REST API + MercadoPago
 - **Package Manager**: pnpm (always use pnpm for commands)
 
-## Active Tasks (feat/coupun-function)
+## Active Tasks (feat/promotion-banner)
 
-- [ ] Create `Promotion` or `Coupon` content type in Strapi
-- [ ] Implement coupon validation logic in the backend
-- [ ] Add coupon application UI in the frontend checkout
-- [ ] Integrate coupon discounts into order calculation and MercadoPago preference
+- [ ] Verify if there are any remaining features or bugs for the promotion banner
+- [ ] Determine next priorities for the active branch `feat/promotion-banner`
 
 ## Completed/Paused Tasks
+
+### feat/coupun-function (Completed)
+- [x] Create `Promotion` or `Coupon` content type in Strapi
+- [x] Implement coupon validation logic in the backend
+- [x] Add coupon application UI in the frontend checkout
+- [x] Integrate coupon discounts into order calculation and MercadoPago preference
 
 ### feat/strapi-plugin-backup (Paused)
 - [ ] Research and implement a backup solution for Strapi (database + uploads)
@@ -40,11 +44,9 @@ It serves as a bridge to the established guidelines in `CLAUDE.md`.
 - [ ] Improve URL parameter handling (Paused)
 - [ ] Optimize filter performance (Paused)
 
-## Session Log (2026-05-14)
+## Session Log (2026-05-18)
 
-- **11:46 AM**: Initialized project memory via `/init`. Branch switched to `feat/strapi-plugin-backup`. focus shifted to backend backup implementation.
-- **12:28 PM (2026-04-16)**: Committed decoupling of measurement labels from backend values. Added `M_` prefix handling for pillow sizes.
-- **06:42 PM**: Fixed database authentication error (`password authentication failed for user "postgres"`) by resolving port conflict and starting the project's Docker container. Switched to `feat/coupun-function` branch.
+- **11:37 AM**: Initialized project memory via `/init`. Branch is `feat/promotion-banner`. Audited project and verified that coupon-function is fully completed and merged. Updated memory in `GEMINI.md`.
 
 ## Key Guidelines from CLAUDE.md
 
@@ -55,3 +57,4 @@ It serves as a bridge to the established guidelines in `CLAUDE.md`.
 - **Language**: Core logic and responses should be in English (unless UI copy is requested in Spanish).
 
 For detailed command references, project structure, and integration logic, refer directly to [CLAUDE.md](file:///c:/Desarrollo/flexigom/CLAUDE.md).
+
