@@ -4,11 +4,16 @@
 export default ({ env }: { env: any }) => {
   // Si estamos en producción y tenemos DATABASE_URL, usar PostgreSQL
   if (env('NODE_ENV') === 'production' || env('DATABASE_URL')) {
+    const rawUrl = env('DATABASE_URL');
+    const normalizedUrl = rawUrl && rawUrl.startsWith('postgres://')
+      ? rawUrl.replace(/^postgres:\/\//, 'postgresql://')
+      : rawUrl;
+
     return {
       connection: {
         client: 'postgres',
         connection: {
-          connectionString: env('DATABASE_URL'),
+          connectionString: normalizedUrl,
           ssl: env.bool('DATABASE_SSL', false) && {
             rejectUnauthorized: env.bool('DATABASE_SSL_REJECT_UNAUTHORIZED', true),
           },

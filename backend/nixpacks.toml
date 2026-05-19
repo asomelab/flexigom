@@ -1,2 +1,2 @@
 [phases.setup]
-aptPkgs = ["postgresql-client-16"]
+nixPkgs = ["postgresql_17"]
