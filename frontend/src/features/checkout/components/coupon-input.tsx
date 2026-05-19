@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useCartStore, selectAppliedCoupon } from "@/features/cart/store/cart-store";
+import {
+  useCartStore,
+  selectAppliedCoupon,
+} from "@/features/cart/store/cart-store";
 import api from "@/lib/api";
 import { Tag, X, Loader2 } from "lucide-react";
 
@@ -9,23 +12,25 @@ export function CouponInput() {
   const [code, setCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const appliedCoupon = useCartStore(selectAppliedCoupon);
   const applyCoupon = useCartStore((state) => state.applyCoupon);
   const removeCoupon = useCartStore((state) => state.removeCoupon);
 
   const handleApply = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!code.trim()) return;
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
       // API call to Strapi to find an active coupon matching the code
-      const { data } = await api.get(`/coupons?filters[code][$eq]=${code.trim()}&filters[isActive][$eq]=true`);
-      
+      const { data } = await api.get(
+        `/coupons?filters[code][$eq]=${code.trim()}&filters[isActive][$eq]=true`,
+      );
+
       const coupons = data.data;
       if (coupons && coupons.length > 0) {
         const coupon = coupons[0];
@@ -60,9 +65,11 @@ export function CouponInput() {
       <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-md">
         <div className="flex items-center text-green-700">
           <Tag className="w-4 h-4 mr-2" />
-          <span className="font-medium">Cupón aplicado: {appliedCoupon.code}</span>
+          <span className="font-medium">
+            Cupón aplicado: {appliedCoupon.code}
+          </span>
         </div>
-        <button 
+        <button
           onClick={removeCoupon}
           className="p-1 text-green-600 hover:text-green-800 transition-colors"
           title="Remover cupón"
@@ -82,9 +89,9 @@ export function CouponInput() {
           onChange={(e) => setCode(e.target.value.toUpperCase())}
           className="uppercase"
         />
-        <Button 
-          type="submit" 
-          variant="secondary" 
+        <Button
+          type="submit"
+          variant="secondary"
           disabled={isLoading || !code.trim()}
         >
           {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Aplicar"}

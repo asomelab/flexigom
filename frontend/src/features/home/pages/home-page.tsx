@@ -1,8 +1,22 @@
 import { lazy, Suspense } from "react";
 import { HeroSection } from "@/features/home/sections/hero-section";
-import { CategoriesSection } from "@/features/home/sections/categories-section";
-import { FeaturedProductsSection } from "@/features/home/sections/featured-products-section";
-import { WhyChooseFlexigomSection } from "@/features/home/sections/why-choose-flexigom-section";
+import { PromotionBanner } from "@/features/home/components/promotion-banner";
+
+const CategoriesSection = lazy(() =>
+  import("@/features/home/sections/categories-section").then((m) => ({
+    default: m.CategoriesSection,
+  })),
+);
+const FeaturedProductsSection = lazy(() =>
+  import("@/features/home/sections/featured-products-section").then((m) => ({
+    default: m.FeaturedProductsSection,
+  })),
+);
+const WhyChooseFlexigomSection = lazy(() =>
+  import("@/features/home/sections/why-choose-flexigom-section").then((m) => ({
+    default: m.WhyChooseFlexigomSection,
+  })),
+);
 const TestimonialsSection = lazy(() =>
   import("@/features/home/sections/testimonials-section").then((m) => ({
     default: m.TestimonialsSection,
@@ -28,11 +42,7 @@ const FooterSection = lazy(() =>
     default: m.FooterSection,
   })),
 );
-const PromotionBanner = lazy(() =>
-  import("@/features/home/components/promotion-banner").then((m) => ({
-    default: m.PromotionBanner,
-  })),
-);
+
 import { SEOHead } from "@/components/seo";
 import {
   createHomeSEO,
@@ -59,10 +69,10 @@ export function Component() {
       />
       <PromotionBanner />
       <HeroSection />
-      <CategoriesSection />
-      <WhyChooseFlexigomSection />
-      <FeaturedProductsSection />
-      <Suspense fallback={<div className="h-20" />}>
+      <Suspense fallback={<div className="h-40" />}>
+        <CategoriesSection />
+        <WhyChooseFlexigomSection />
+        <FeaturedProductsSection />
         <TestimonialsSection />
         <HelpSection />
         <FAQsSection />

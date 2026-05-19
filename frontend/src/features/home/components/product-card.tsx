@@ -25,7 +25,7 @@ interface ProductCardProps {
 export function ProductCard({ product, className }: ProductCardProps) {
   const images =
     product.images && Array.isArray(product.images) ? product.images : [];
-  const imageUrl = getImageUrl(images[0]?.url);
+  const imageUrl = getImageUrl(images[0]?.url, { width: 800 });
   const price = Number(product.price) || 0;
   const discountPrice = Number(product.discount_price) || 0;
   const hasDiscount = discountPrice > 0 && discountPrice < price;
@@ -74,13 +74,13 @@ export function ProductCard({ product, className }: ProductCardProps) {
                     className="h-full pl-0 relative overflow-hidden"
                   >
                     <img
-                      src={getImageUrl(img.url) || undefined}
+                      src={getImageUrl(img.url, { width: 800 }) || undefined}
                       alt={
                         img.alternativeText ||
                         `Imagen ${index + 1} de ${product.name}`
                       }
                       className="w-full h-full object-cover group-hover/image:scale-105 transition-transform duration-500"
-                      loading={index === 0 ? "eager" : "lazy"}
+                      loading="lazy"
                     />
                   </CarouselItem>
                 ))}

@@ -97,11 +97,13 @@ export function OrderSummary({
           {appliedCoupon && (
             <div className="flex justify-between text-sm text-green-600">
               <span className="font-medium">
-                Descuento ({appliedCoupon.type === 'percentage' ? `${appliedCoupon.value}%` : `$${appliedCoupon.value}`})
+                Descuento (
+                {appliedCoupon.type === "percentage"
+                  ? `${appliedCoupon.value}%`
+                  : `$${appliedCoupon.value}`}
+                )
               </span>
-              <span>
-                -{formatPrice(subtotal - total)}
-              </span>
+              <span>-{formatPrice(subtotal - total)}</span>
             </div>
           )}
 

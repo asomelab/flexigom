@@ -17,10 +17,15 @@ It serves as a bridge to the established guidelines in `CLAUDE.md`.
 
 ## Active Tasks (feat/promotion-banner)
 
-- [ ] Verify if there are any remaining features or bugs for the promotion banner
-- [ ] Determine next priorities for the active branch `feat/promotion-banner`
+- [x] Integrate high-performance responsive promotion banner in Hero Section
+- [x] Implement conditional mobile image rendering (`promotion-banner-mobile.webp`) using `<picture>` tag
+- [x] Configure slow, customized repeating marquee animation and spacing for the promo banner
 
 ## Completed/Paused Tasks
+
+### feat/promotion-banner (Completed)
+- [x] Integrate desktop & mobile responsive promotion banners in the Hero section
+- [x] Refactor and style the scrolling marquee promotional banner with custom animation speed and gap settings
 
 ### feat/coupun-function (Completed)
 - [x] Create `Promotion` or `Coupon` content type in Strapi
@@ -47,6 +52,11 @@ It serves as a bridge to the established guidelines in `CLAUDE.md`.
 ## Session Log (2026-05-18)
 
 - **11:37 AM**: Initialized project memory via `/init`. Branch is `feat/promotion-banner`. Audited project and verified that coupon-function is fully completed and merged. Updated memory in `GEMINI.md`.
+
+## Session Log (2026-05-19)
+
+- **11:50 AM**: Refactored the responsive `hero-section.tsx` right column to use `<picture>` element. Embedded high-performance conditional source targeting mobile viewports via `promotion-banner-mobile.webp` and desktop viewports via `promotion-banner.webp`.
+- **12:02 PM**: Tuned scrolling marquee animation in `index.css` by reducing speed to `40s` linear loop, and widened item separation to `gap-2 px-20` in `promotion-banner.tsx` for optimal readability and spacing. Tested compilation and formatting using `pnpm tsc` and `pnpm format`.
 
 ## Key Guidelines from CLAUDE.md
 

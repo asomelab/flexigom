@@ -1,6 +1,8 @@
 import { Outlet, useLocation } from "react-router";
 import { Navbar } from "@/features/home/components/navbar";
-import { FloatingSupport } from "@/components/floating-support";
+import { lazy, Suspense } from "react";
+
+const FloatingSupport = lazy(() => import("@/components/floating-support").then(m => ({ default: m.FloatingSupport })));
 import { useCartStore } from "@/features/cart/store/cart-store";
 import { useEffect } from "react";
 import { pixel } from "@/lib/meta-pixel";
@@ -23,7 +25,9 @@ export function RootLayout() {
       <main className="mx-auto">
         <Outlet />
       </main>
-      <FloatingSupport />
+      <Suspense fallback={null}>
+        <FloatingSupport />
+      </Suspense>
     </div>
   );
 }
