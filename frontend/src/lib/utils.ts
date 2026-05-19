@@ -5,24 +5,44 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+interface GetImageUrlOptions {
+  width?: number;
+}
+
 /**
- * Gets the full URL for a Strapi media file
- * @param url - The relative URL from Strapi media
- * @returns The full URL including the base URL
+ * Gets the full URL for a media file, optimizing Cloudinary URLs
+ * @param url - The relative or absolute URL from Strapi media
+ * @param options - Transformation options (e.g., width)
+ * @returns The optimized full URL
  */
-export function getImageUrl(url?: string): string | null {
+export function getImageUrl(url?: string, options?: GetImageUrlOptions): string | null {
   if (!url) return null;
 
-  const baseUrl = import.meta.env.VITE_STRAPI_URL || "http://localhost:1337";
+  let finalUrl = url;
 
-  // If URL already includes the protocol, return as is
-  if (url.startsWith("http://") || url.startsWith("https://")) {
-    return url;
+  // If URL doesn't include the protocol, it's relative to our backend
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    const baseUrl = import.meta.env.VITE_STRAPI_URL || "http://localhost:1337";
+    const mediaBaseUrl = baseUrl.replace("/api", "");
+    finalUrl = `${mediaBaseUrl}${url}`;
   }
 
-  // Remove /api from base URL for media files and add the relative URL
-  const mediaBaseUrl = baseUrl.replace("/api", "");
-  return `${mediaBaseUrl}${url}`;
+  // Intercept Cloudinary URLs to inject performance transformations
+  if (finalUrl.includes("res.cloudinary.com") && finalUrl.includes("/image/upload/")) {
+    const transformations = ["f_auto", "q_auto"];
+    if (options?.width) {
+      transformations.push(`w_${options.width}`);
+    }
+    
+    const transformString = transformations.join(",");
+    
+    // Only inject if it doesn't already have f_auto (to prevent duplication)
+    if (!finalUrl.includes("f_auto")) {
+      finalUrl = finalUrl.replace("/image/upload/", `/image/upload/${transformString}/`);
+    }
+  }
+
+  return finalUrl;
 }
 
 export const formatPrice = (price: number) => {

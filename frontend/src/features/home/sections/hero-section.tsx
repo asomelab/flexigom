@@ -52,7 +52,12 @@ export function HeroSection({
       <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
         <div className="items-center gap-12 grid grid-cols-1 lg:grid-cols-2">
           {/* Content */}
-          <div className={cn("space-y-8 h-full", isPromoActive && "order-last lg:order-none")}>
+          <div
+            className={cn(
+              "space-y-8 h-full",
+              isPromoActive && "order-last lg:order-none",
+            )}
+          >
             <div className="space-y-6">
               <h1 className="font-bold text-black text-4xl md:text-5xl lg:text-6xl leading-tight">
                 {heroContent.title.main}
@@ -89,18 +94,30 @@ export function HeroSection({
           </div>
 
           {/* Hero Image */}
-          <div className={cn("relative", isPromoActive && "order-first lg:order-none w-full scale-105 lg:scale-100")}>
+          <div
+            className={cn(
+              "relative",
+              isPromoActive &&
+                "order-first lg:order-none w-full scale-105 lg:scale-100",
+            )}
+          >
             {isPromoActive ? (
               <a href="/products" className="block relative">
                 <div className="shadow-2xl rounded-2xl overflow-hidden">
-                  <img
-                    src="/promotion-banner.webp"
-                    alt="Promoción temporal"
-                    fetchPriority="high"
-                    loading="eager"
-                    decoding="sync"
-                    className="w-full h-auto object-cover rounded-2xl"
-                  />
+                  <picture>
+                    <source
+                      media="(max-width: 1023px)"
+                      srcSet="/promotion-banner-mobile.webp"
+                    />
+                    <img
+                      src="/promotion-banner.webp"
+                      alt="Promoción temporal"
+                      fetchPriority="high"
+                      loading="eager"
+                      decoding="sync"
+                      className="w-full h-auto object-cover rounded-2xl"
+                    />
+                  </picture>
                 </div>
               </a>
             ) : (
@@ -118,7 +135,9 @@ export function HeroSection({
 
                 {/* Floating badge */}
                 <div className="-bottom-6 md:-bottom-6 sm:-left-4 lg:-left-6 absolute bg-red-600 shadow-lg p-6 rounded-2xl text-white">
-                  <p className="font-bold text-2xl">{heroImage.badge.primary}</p>
+                  <p className="font-bold text-2xl">
+                    {heroImage.badge.primary}
+                  </p>
                   <p className="text-base">{heroImage.badge.secondary}</p>
                 </div>
               </>
