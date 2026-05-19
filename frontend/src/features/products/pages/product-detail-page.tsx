@@ -28,7 +28,7 @@ import { Label } from "@/components/ui/label";
 import { useProductBySlug } from "../hooks/use-products";
 import { RichTextRenderer } from "@/components/rich-text-renderer";
 import { ProductDetailSkeleton } from "@/components/product-detail-skeleton";
-import { SimilarProducts } from "../components/similar-products";
+const SimilarProducts = lazy(() => import("../components/similar-products").then(m => ({ default: m.SimilarProducts })));
 import { InstallmentBadge } from "@/components/ui/installment-badge";
 import { cn, getImageUrl, formatPrice } from "@/lib/utils";
 import {
@@ -41,7 +41,7 @@ import {
   Share2,
   ChevronLeft,
 } from "lucide-react";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, lazy, Suspense } from "react";
 import { handleShare } from "@/lib/utils";
 import { pixel } from "@/lib/meta-pixel";
 import { SEOHead } from "@/components/seo";
@@ -613,10 +613,12 @@ export function ProductDetailPage() {
 
           {/* Similar Products */}
           {product && (
-            <SimilarProducts
-              currentProductId={product.documentId}
-              categorySlug={product.categories?.[0]?.slug}
-            />
+            <Suspense fallback={<div className="h-40" />}>
+              <SimilarProducts
+                currentProductId={product.documentId}
+                categorySlug={product.categories?.[0]?.slug}
+              />
+            </Suspense>
           )}
         </div>
       </div>
