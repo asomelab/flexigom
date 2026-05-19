@@ -58,7 +58,8 @@ export function buildPreferenceRequest(params: {
   externalReference?: string;
   notificationUrl?: string;
 }): MercadoPagoPreferenceRequest {
-  const { items, couponCode, payer, externalReference, notificationUrl } = params;
+  const { items, couponCode, payer, externalReference, notificationUrl } =
+    params;
 
   const preferenceRequest: any = {
     items: items.map((item) => ({

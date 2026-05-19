@@ -205,15 +205,15 @@ export const useCartStore = create<CartState>()(
         const subtotal = get().getSubtotal();
         const coupon = get().appliedCoupon;
         let discount = 0;
-        
+
         if (coupon) {
-          if (coupon.type === 'percentage') {
+          if (coupon.type === "percentage") {
             discount = subtotal * (Number(coupon.value) / 100);
-          } else if (coupon.type === 'fixed') {
+          } else if (coupon.type === "fixed") {
             discount = Number(coupon.value);
           }
         }
-        
+
         return Math.max(0, subtotal - discount);
       },
 
