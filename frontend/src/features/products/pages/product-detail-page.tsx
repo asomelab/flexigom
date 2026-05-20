@@ -1,3 +1,4 @@
+import { lazy, Suspense, useState, useMemo, useEffect } from "react";
 import { useParams, Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,7 +42,6 @@ import {
   Share2,
   ChevronLeft,
 } from "lucide-react";
-import { useState, useMemo, useEffect, lazy, Suspense } from "react";
 import { handleShare } from "@/lib/utils";
 import { pixel } from "@/lib/meta-pixel";
 import { SEOHead } from "@/components/seo";
