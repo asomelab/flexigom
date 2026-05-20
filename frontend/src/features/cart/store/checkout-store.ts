@@ -7,6 +7,7 @@ import {
 } from "../types";
 import type { ShippingFormData } from "../types/shipping-types";
 import { useCartStore } from "./cart-store";
+import { createManualOrder } from "@/features/checkout/services/order-service";
 
 /**
  * Checkout flow store
@@ -151,19 +152,46 @@ export const useCheckoutStore = create<CheckoutState>()(
             throw new Error("Use el botón de MercadoPago para continuar");
           }
 
-          // TODO: Replace with actual API call for other payment methods
-          // Simulate API call
-          await new Promise((resolve) => setTimeout(resolve, 2000));
+          const shipping = formData.shipping;
+          const externalReference = `ORDER-${Date.now()}`;
 
-          // Generate mock order ID
-          const orderId = `ORD-${Date.now()}`;
+          const phoneMatch = shipping.phone?.match(/^(\d{2,4})?(\d+)$/);
+          const payer = {
+            name: shipping.firstName,
+            surname: shipping.lastName,
+            email: shipping.email,
+            phone: phoneMatch
+              ? { area_code: phoneMatch[1] || "", number: phoneMatch[2] || shipping.phone }
+              : { area_code: "", number: shipping.phone },
+            identification: {
+              type: shipping.documentType,
+              number: shipping.documentNumber,
+            },
+            fiscalCategory: shipping.fiscalCategory,
+            address: `${shipping.address}, ${shipping.city}, ${shipping.province} ${shipping.postalCode}`,
+          };
 
-          // Clear cart after successful order
+          const items = cartItems.map((item) => ({
+            productId: item.product.documentId || item.productId || "",
+            quantity: item.quantity,
+            composition: item.composition,
+            measurement: item.measurement,
+            base_type: item.base_type,
+          }));
+
+          const result = await createManualOrder({
+            items,
+            payer,
+            couponCode: cart.appliedCoupon?.code,
+            payment_method: formData.payment.paymentMethod,
+            external_reference: externalReference,
+          });
+
           cart.clearCart();
 
           set(
             {
-              orderId,
+              orderId: result.external_reference,
               isProcessing: false,
               currentStep: CheckoutStep.CONFIRMATION,
             },
