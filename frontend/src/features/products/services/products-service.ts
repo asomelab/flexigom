@@ -218,6 +218,31 @@ export class ProductService {
     }
   }
 
+  static async getProductByDocumentId(documentId: string): Promise<Product | null> {
+    try {
+      if (!documentId || typeof documentId !== "string") {
+        throw new Error("Invalid documentId provided");
+      }
+
+      const response = await api.get<StrapiResponse<Product[]>>("/products", {
+        params: {
+          filters: {
+            documentId: {
+              $eq: documentId,
+            },
+          },
+          populate: ["categories", "images"],
+        },
+      });
+
+      const products = response.data.data || [];
+      return products.length > 0 ? products[0] : null;
+    } catch (error) {
+      console.error(`Error fetching product with documentId ${documentId}:`, error);
+      throw error;
+    }
+  }
+
   static async createProduct(productData: Partial<Product>): Promise<Product> {
     try {
       if (!productData || typeof productData !== "object") {
