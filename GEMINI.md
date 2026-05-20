@@ -80,6 +80,6 @@ It serves as a bridge to the established guidelines in `CLAUDE.md`.
 - **Null Handling**: Sections should return `null` when data is empty.
 - **Language**: Core logic and responses should be in English (unless UI copy is requested in Spanish).
 
-For detailed command references, project structure, and integration logic, refer directly to [CLAUDE.md](file:///c:/Desarrollo/flexigom/CLAUDE.md).
+For detailed command references, project structure, and integration logic, refer directly to [CLAUDE.md](file:///c:/Desarrollo/flexigom/CLAUDE.md). 
 
 
