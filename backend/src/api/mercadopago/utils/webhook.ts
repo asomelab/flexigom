@@ -293,5 +293,90 @@ export const processPaymentNotification = async (
     }
   }
 
+  // Trigger Meta Conversions API Purchase Event
+  if (status === "approved" && updatedOrder) {
+    try {
+      await sendMetaCAPIPurchase(updatedOrder);
+    } catch (capiError) {
+      console.error(
+        `[MercadoPago Webhook] Failed to dispatch CAPI Purchase event:`,
+        capiError
+      );
+    }
+  }
+
   return updatedOrder;
 };
+
+/**
+ * Hash customer data using SHA256 as required by Meta privacy policies
+ */
+function hashData(data: string | undefined): string | null {
+  if (!data) return null;
+  return crypto
+    .createHash('sha256')
+    .update(data.trim().toLowerCase())
+    .digest('hex');
+}
+
+/**
+ * Send server-side Purchase event to Meta Conversions API
+ */
+async function sendMetaCAPIPurchase(order: any) {
+  const pixelId = process.env.META_PIXEL_ID;
+  const accessToken = process.env.META_CAPI_ACCESS_TOKEN;
+
+  if (!pixelId || !accessToken) {
+    console.warn('[Meta CAPI] Missing META_PIXEL_ID or META_CAPI_ACCESS_TOKEN in env');
+    return;
+  }
+
+  try {
+    const payload = {
+      data: [
+        {
+          event_name: 'Purchase',
+          event_time: Math.floor(Date.now() / 1000),
+          action_source: 'website',
+          event_source_url: 'https://www.flexigomtucuman.com/checkout/success',
+          user_data: {
+            em: order.customer_email ? [hashData(order.customer_email)] : [],
+            ph: order.customer_phone ? [hashData(order.customer_phone)] : [],
+            fn: order.customer_name ? [hashData(order.customer_name.split(' ')[0])] : [],
+            ln: order.customer_name && order.customer_name.split(' ').length > 1 
+              ? [hashData(order.customer_name.split(' ').slice(1).join(' '))] 
+              : [],
+          },
+          custom_data: {
+            value: Number(order.transaction_amount) || 0,
+            currency: 'ARS',
+            order_id: order.external_reference,
+          },
+        },
+      ],
+    };
+
+    console.log(`[Meta CAPI] Sending Purchase event for order ${order.external_reference}...`);
+    
+    const response = await fetch(
+      `https://graph.facebook.com/v19.0/${pixelId}/events?access_token=${accessToken}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const responseData: any = await response.json();
+
+    if (!response.ok) {
+      throw new Error(JSON.stringify(responseData));
+    }
+
+    console.log(`[Meta CAPI] Successfully sent Purchase event for order ${order.external_reference}`);
+  } catch (error: any) {
+    console.error('[Meta CAPI] Failed to send Conversions API event:', error.message);
+  }
+}
