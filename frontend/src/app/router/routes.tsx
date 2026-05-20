@@ -73,7 +73,7 @@ export const routes: RouteObject[] = [
                   const { ProductService } = await import(
                     "@/features/products/services/products-service"
                   );
-                  const product = await ProductService.getProduct(documentId);
+                  const product = await ProductService.getProductByDocumentId(documentId);
                   if (product?.slug) {
                     return new Response(null, {
                       status: 301,
