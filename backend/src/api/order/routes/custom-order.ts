@@ -5,7 +5,15 @@ export default {
       path: '/orders/tracking/:externalReference',
       handler: 'api::order.order.getTrackingDetails',
       config: {
-        auth: false, // Accessible by anonymous frontend success page
+        auth: false,
+      },
+    },
+    {
+      method: 'POST',
+      path: '/orders/manual',
+      handler: 'api::order.order.createManualOrder',
+      config: {
+        auth: false,
       },
     },
   ],

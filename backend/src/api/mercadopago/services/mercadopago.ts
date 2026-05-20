@@ -4,6 +4,7 @@
 
 import { MercadoPagoConfig, Preference, Payment } from "mercadopago";
 import * as webhookUtils from "../utils/webhook";
+import { normalizeDocumentType } from "../utils/webhook";
 
 // Types for the preference creation
 export interface PreferenceItem {
@@ -73,7 +74,79 @@ const initMercadoPago = () => {
 
 export default () => ({
   /**
-   * Create a MercadoPago payment preference
+   * Calculate order items and totals securely from backend product prices.
+   * Shared by createPreference and createManualOrder.
+   */
+  async calculateOrderItems(
+    items: PreferenceItem[],
+    couponCode?: string
+  ): Promise<{ mpItems: any[]; subtotal: number; discountAmount: number; finalTotal: number }> {
+    let subtotal = 0;
+    const mpItems: any[] = [];
+
+    for (const item of items) {
+      const product = await strapi.db.query('api::product.product').findOne({
+        where: { documentId: item.productId },
+        populate: ['categories', 'images'],
+      });
+
+      if (!product) {
+        throw new Error(`Product not found: ${item.productId}`);
+      }
+
+      const isReinforced = product.has_base_options && item.base_type === "Reforzada";
+      const basePrice = isReinforced
+        ? Number(product.reinforced_base_price) || Number(product.price) || 0
+        : Number(product.price) || 0;
+      const discountPrice = isReinforced
+        ? Number(product.reinforced_base_discount_price) || 0
+        : Number(product.discount_price) || 0;
+      const finalPrice = discountPrice > 0 && discountPrice < basePrice ? discountPrice : basePrice;
+
+      const descriptionParts: string[] = [];
+      if (typeof product.description === "string") descriptionParts.push(product.description);
+      if (item.composition) descriptionParts.push(`Composición: ${item.composition}`);
+      if (item.measurement) descriptionParts.push(`Medida: ${item.measurement}`);
+
+      mpItems.push({
+        id: item.productId,
+        title: product.name,
+        quantity: item.quantity,
+        unit_price: finalPrice,
+        currency_id: "ARS",
+        description: descriptionParts.join(" | ") || undefined,
+        category_id: product.categories?.[0]?.name || undefined,
+      });
+
+      subtotal += finalPrice * item.quantity;
+    }
+
+    let discountAmount = 0;
+    let finalTotal = subtotal;
+
+    if (couponCode) {
+      const coupon = await strapi.db.query('api::coupon.coupon').findOne({
+        where: { code: couponCode, isActive: true },
+      });
+
+      if (coupon) {
+        const isExpired = coupon.expirationDate && new Date() > new Date(coupon.expirationDate);
+        if (!isExpired) {
+          if (coupon.type === 'percentage') {
+            discountAmount = subtotal * (Number(coupon.value) / 100);
+          } else if (coupon.type === 'fixed') {
+            discountAmount = Number(coupon.value);
+          }
+        }
+      }
+    }
+
+    finalTotal = Math.max(0, subtotal - discountAmount);
+    return { mpItems, subtotal, discountAmount, finalTotal };
+  },
+
+  /**
+   * Create a MercadoPago payment preference and persist a pending order.
    */
   async createPreference(
     data: CreatePreferenceRequest
@@ -81,7 +154,6 @@ export default () => ({
     try {
       const preference = initMercadoPago();
 
-      // Get back URLs from environment or use defaults
       const successUrl =
         process.env.MERCADOPAGO_SUCCESS_URL ||
         "http://localhost:5173/checkout/success";
@@ -92,122 +164,85 @@ export default () => ({
         process.env.MERCADOPAGO_PENDING_URL ||
         "http://localhost:5173/checkout/pending";
 
-      let subtotal = 0;
-      const mpItems: any[] = [];
-
-      // Calculate total securely from backend prices
-      for (const item of data.items) {
-        // Fetch product from DB
-        const product = await strapi.db.query('api::product.product').findOne({
-          where: { documentId: item.productId },
-          populate: ['categories', 'images']
-        });
-
-        if (!product) {
-          throw new Error(`Product not found: ${item.productId}`);
-        }
-
-        // Calculate unit price based on rules
-        const isReinforced = product.has_base_options && item.base_type === "Reforzada";
-        const basePrice = isReinforced
-          ? Number(product.reinforced_base_price) || Number(product.price) || 0
-          : Number(product.price) || 0;
-          
-        const discountPrice = isReinforced
-          ? Number(product.reinforced_base_discount_price) || 0
-          : Number(product.discount_price) || 0;
-          
-        const finalPrice = discountPrice > 0 && discountPrice < basePrice ? discountPrice : basePrice;
-
-        const descriptionParts = [];
-        if (typeof product.description === "string") descriptionParts.push(product.description);
-        if (item.composition) descriptionParts.push(`Composición: ${item.composition}`);
-        if (item.measurement) descriptionParts.push(`Medida: ${item.measurement}`);
-
-        mpItems.push({
-          id: item.productId,
-          title: product.name,
-          quantity: item.quantity,
-          unit_price: finalPrice,
-          currency_id: "ARS",
-          description: descriptionParts.join(" | ") || undefined,
-          category_id: product.categories?.[0]?.name || undefined,
-        });
-
-        subtotal += finalPrice * item.quantity;
-      }
-
-      let discountAmount = 0;
-      let finalTotal = subtotal;
-
-      // Handle coupon
-      if (data.couponCode) {
-        const coupon = await strapi.db.query('api::coupon.coupon').findOne({
-          where: { code: data.couponCode, isActive: true }
-        });
-
-        if (coupon) {
-          const now = new Date();
-          let isExpired = false;
-          if (coupon.expirationDate) {
-             const expDate = new Date(coupon.expirationDate);
-             if (now > expDate) isExpired = true;
-          }
-
-          if (!isExpired) {
-            if (coupon.type === 'percentage') {
-              discountAmount = subtotal * (Number(coupon.value) / 100);
-            } else if (coupon.type === 'fixed') {
-              discountAmount = Number(coupon.value);
-            }
-          }
-        }
-      }
-
-      finalTotal = Math.max(0, subtotal - discountAmount);
+      const { mpItems, subtotal, discountAmount, finalTotal } = await strapi
+        .service('api::mercadopago.mercadopago')
+        .calculateOrderItems(data.items, data.couponCode);
 
       if (finalTotal === 0 && subtotal > 0) {
         throw new Error("Total cannot be 0 when using MercadoPago");
       }
 
+      // Apply coupon discount proportionally across items for MP preference
+      let adjustedItems = mpItems;
       if (discountAmount > 0 && subtotal > 0 && finalTotal > 0) {
         const discountFactor = finalTotal / subtotal;
         let runningTotal = 0;
-        
-        for (let i = 0; i < mpItems.length; i++) {
-          const item = mpItems[i];
+        adjustedItems = mpItems.map((item: any, i: number) => {
           if (i === mpItems.length - 1) {
             const remainingToTarget = finalTotal - runningTotal;
-            item.unit_price = Math.max(0, Number((remainingToTarget / item.quantity).toFixed(2)));
-          } else {
-            const discountedPrice = Number((item.unit_price * discountFactor).toFixed(2));
-            item.unit_price = discountedPrice;
-            runningTotal += discountedPrice * item.quantity;
+            return { ...item, unit_price: Math.max(0, Number((remainingToTarget / item.quantity).toFixed(2))) };
           }
-        }
+          const discountedPrice = Number((item.unit_price * discountFactor).toFixed(2));
+          runningTotal += discountedPrice * item.quantity;
+          return { ...item, unit_price: discountedPrice };
+        });
       }
 
-      // Create the preference body
+      const externalReference = data.external_reference || `ORDER-${Date.now()}`;
+
+      // Persist a pending order immediately so the webhook can update it
+      const existingOrders = await strapi.documents("api::order.order").findMany({
+        filters: { external_reference: externalReference },
+        limit: 1,
+      });
+
+      if (!existingOrders || existingOrders.length === 0) {
+        const customerData = {
+          customer_name: data.payer
+            ? `${data.payer.name || ''} ${data.payer.surname || ''}`.trim() || 'CONSUMIDOR FINAL'
+            : 'CONSUMIDOR FINAL',
+          customer_email: data.payer?.email || '',
+          customer_phone: data.payer?.phone
+            ? `${data.payer.phone.area_code || ''}${data.payer.phone.number || ''}`
+            : '',
+          customer_dni: data.payer?.identification?.number || '',
+          customer_document_type: normalizeDocumentType(data.payer?.identification?.type),
+          customer_fiscal_category: (data.metadata?.customer_fiscal_category as 'CONSUMIDOR_FINAL' | 'RESPONSABLE_INSCRIPTO' | 'EXENTO' | 'MONOTRIBUTISTA') || 'CONSUMIDOR_FINAL',
+          customer_address: data.payer?.address?.street_name
+            ? `${data.payer.address.street_name} ${data.payer.address.street_number || ''}`.trim()
+            : '',
+        };
+
+        await strapi.documents("api::order.order").create({
+          data: {
+            external_reference: externalReference,
+            payment_status: 'pending',
+            payment_method: 'mercadopago',
+            transaction_amount: finalTotal,
+            items: mpItems,
+            metadata: data.metadata || {},
+            ...customerData,
+          },
+        });
+
+        console.log(`[MercadoPago] Created pending order for external_reference: ${externalReference}`);
+      } else {
+        console.log(`[MercadoPago] Order already exists for external_reference: ${externalReference}, skipping create`);
+      }
+
       const preferenceBody: any = {
-        items: mpItems,
-        back_urls: {
-          success: successUrl,
-          failure: failureUrl,
-          pending: pendingUrl,
-        },
+        items: adjustedItems,
+        back_urls: { success: successUrl, failure: failureUrl, pending: pendingUrl },
         statement_descriptor: "FLEXIGOM",
+        external_reference: externalReference,
       };
 
-      // Add optional fields only if they exist
       if (data.payer) preferenceBody.payer = data.payer;
-      if (data.external_reference) preferenceBody.external_reference = data.external_reference;
       if (data.notification_url) preferenceBody.notification_url = data.notification_url;
       if (data.metadata) preferenceBody.metadata = data.metadata;
 
-      // Create preference with MercadoPago
       const response = await preference.create({ body: preferenceBody });
 
-      // Return structured response
       return {
         id: response.id!,
         init_point: response.init_point!,
@@ -217,14 +252,9 @@ export default () => ({
         external_reference: response.external_reference,
       };
     } catch (error) {
-      // Log the error for debugging
       console.error("MercadoPago createPreference error:", error);
-
-      // Re-throw with more context
       if (error instanceof Error) {
-        throw new Error(
-          `Failed to create MercadoPago preference: ${error.message}`
-        );
+        throw new Error(`Failed to create MercadoPago preference: ${error.message}`);
       }
       throw new Error("Failed to create MercadoPago preference: Unknown error");
     }

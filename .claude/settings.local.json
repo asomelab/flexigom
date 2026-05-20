@@ -5,7 +5,19 @@
       "Bash(pnpm lint:*)",
       "Skill(vercel-react-best-practices)",
       "WebFetch(domain:market.strapi.io)",
-      "Bash(pnpm add *)"
+      "Bash(pnpm add *)",
+      "Bash(pnpm build *)",
+      "mcp__plugin_engram_engram__mem_judge",
+      "WebFetch(domain:duxsoftware.readme.io)",
+      "Bash(git checkout *)",
+      "Bash(git restore *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(gh pr *)",
+      "Bash(git merge *)",
+      "Bash(gh repo *)",
+      "Bash(gh api *)"
     ],
     "deny": [],
     "ask": []
