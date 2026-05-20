@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useCartStore } from "@/features/cart/store/cart-store";
 import { pixel } from "@/lib/meta-pixel";
+import api from "@/lib/api";
 
 export function PaymentSuccessPage() {
   const navigate = useNavigate();
@@ -24,18 +25,36 @@ export function PaymentSuccessPage() {
 
   // Clear cart on successful payment
   useEffect(() => {
-    if (status === "approved") {
-      const total = useCartStore.getState().getTotal();
+    if (status === "approved" && externalReference) {
+      // Fetch verified, safe order total from backend
+      api.get(`/orders/tracking/${externalReference}`)
+        .then(({ data }) => {
+          const total = data?.data?.total || 0;
+          const currency = data?.data?.currency || "ARS";
+          
+          if (total > 0) {
+            pixel.purchase({
+              value: total,
+              currency: currency,
+              order_id: externalReference || merchantOrderId || undefined,
+            });
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to fetch tracking details:", err);
+        });
 
-      // Track Purchase event (only if there is a valid total to avoid duplicate tracking on reload)
+      clearCart();
+    } else if (status === "approved" && !externalReference) {
+      // Fallback if somehow there's no external reference
+      const total = useCartStore.getState().getTotal();
       if (total > 0) {
         pixel.purchase({
           value: total,
           currency: "ARS",
-          order_id: externalReference || merchantOrderId || undefined,
+          order_id: merchantOrderId || undefined,
         });
       }
-
       clearCart();
     }
   }, [status, clearCart, externalReference, merchantOrderId]);
