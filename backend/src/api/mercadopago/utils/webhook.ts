@@ -90,13 +90,10 @@ export const processPaymentNotification = async (
     `[MercadoPago Webhook] Looking for existing order with external_reference: ${external_reference}`
   );
 
-  const orders = await strapi.entityService.findMany(
-    "api::order.order" as any,
-    {
-      filters: { external_reference },
-      limit: 1,
-    }
-  );
+  const orders = await strapi.documents("api::order.order").findMany({
+    filters: { external_reference },
+    limit: 1,
+  });
 
   console.log(
     `[MercadoPago Webhook] Found ${
@@ -141,7 +138,7 @@ export const processPaymentNotification = async (
 
   if (orders && Array.isArray(orders) && orders.length > 0) {
     console.log(
-      `[MercadoPago Webhook] Found existing order ${orders[0].id} - updating (NEW FLOW)`
+      `[MercadoPago Webhook] Found existing order ${orders[0].id} (documentId: ${orders[0].documentId}) - updating (NEW FLOW)`
     );
 
     // Get existing webhook notifications and append new one
@@ -150,16 +147,13 @@ export const processPaymentNotification = async (
       ? [...existingNotifications, webhookNotification]
       : [webhookNotification];
 
-    updatedOrder = await strapi.entityService.update(
-      "api::order.order" as any,
-      orders[0].id,
-      {
-        data: {
-          ...orderData,
-          webhook_notifications: updatedNotifications,
-        },
-      }
-    );
+    updatedOrder = await strapi.documents("api::order.order").update({
+      documentId: orders[0].documentId,
+      data: {
+        ...orderData,
+        webhook_notifications: updatedNotifications,
+      },
+    });
 
     console.log(
       `[MercadoPago Webhook] Successfully updated order ${updatedOrder?.id} with new payment status: ${status}`
@@ -167,20 +161,17 @@ export const processPaymentNotification = async (
   } else {
     console.log("[MercadoPago Webhook] No existing order found - creating new order (LEGACY FALLBACK)");
 
-    updatedOrder = await strapi.entityService.create(
-      "api::order.order" as any,
-      {
-        data: {
-          ...orderData,
-          external_reference,
-          items: paymentData.additional_info?.items || [],
-          webhook_notifications: [webhookNotification],
-        },
-      }
-    );
+    updatedOrder = await strapi.documents("api::order.order").create({
+      data: {
+        ...orderData,
+        external_reference,
+        items: paymentData.additional_info?.items || [],
+        webhook_notifications: [webhookNotification],
+      },
+    });
 
     console.log(
-      `[MercadoPago Webhook] Successfully created new order ${updatedOrder.id}`
+      `[MercadoPago Webhook] Successfully created new order ${updatedOrder.id} (documentId: ${updatedOrder.documentId})`
     );
   }
 
@@ -221,16 +212,13 @@ export const processPaymentNotification = async (
         // Store error in order record
         try {
           const errorMessage = error instanceof Error ? error.message : String(error);
-          await strapi.entityService.update(
-            "api::order.order" as any,
-            updatedOrder.id,
-            {
-              data: {
-                dux_invoice_status: "failed",
-                dux_invoice_error: errorMessage,
-              },
-            }
-          );
+          await strapi.documents("api::order.order").update({
+            documentId: updatedOrder.documentId,
+            data: {
+              dux_invoice_status: "failed",
+              dux_invoice_error: errorMessage,
+            },
+          });
         } catch (updateError) {
           console.error(
             `[MercadoPago Webhook] Failed to update order with Dux error:`,
@@ -266,7 +254,8 @@ export const processPaymentNotification = async (
         customerAddress: updatedOrder.customer_address,
         orderId: updatedOrder.id.toString(),
         orderDate: new Date().toLocaleDateString("es-AR"),
-        items: (updatedOrder.items || []).map((item: any) => ({
+        paymentDate: new Date().toLocaleDateString("es-AR"),
+        items: ((updatedOrder.items as any) || []).map((item: any) => ({
           name: item.title,
           quantity: item.quantity,
           price: item.unit_price,
@@ -279,7 +268,7 @@ export const processPaymentNotification = async (
         })),
         total: updatedOrder.transaction_amount,
         paymentMethod: updatedOrder.payment_method || "MercadoPago",
-        notes: updatedOrder.metadata?.notes,
+        notes: (updatedOrder.metadata as any)?.notes,
       });
 
       console.log(

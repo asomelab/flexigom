@@ -52,6 +52,7 @@ export interface DuxErrorResponse {
 
 export interface StrapiOrder {
   id: number;
+  documentId?: string;
   external_reference: string;
   payment_id?: string;
   payment_status: string;
