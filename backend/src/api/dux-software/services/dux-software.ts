@@ -186,6 +186,20 @@ export default () => {
     },
 
     /**
+     * Get order documentId from numeric id
+     */
+    async getOrderDocumentId(orderId: number): Promise<string> {
+      const orders = await strapi.documents('api::order.order').findMany({
+        filters: { id: orderId },
+        limit: 1,
+      });
+      if (orders && orders.length > 0) {
+        return orders[0].documentId;
+      }
+      throw new Error(`Order not found with id ${orderId}`);
+    },
+
+    /**
      * Update order with successful invoice data
      */
     async updateOrderWithInvoiceSuccess(
@@ -193,14 +207,16 @@ export default () => {
       invoiceResponse: DuxInvoiceResponse
     ): Promise<void> {
       try {
-        await strapi.entityService.update('api::order.order' as any, orderId, {
+        const documentId = await this.getOrderDocumentId(orderId);
+        await strapi.documents('api::order.order').update({
+          documentId,
           data: {
             dux_invoice_id: invoiceResponse.invoiceId,
             dux_invoice_number: invoiceResponse.invoiceNumber,
             dux_invoice_status: 'created',
             dux_invoice_data: invoiceResponse.data,
             dux_invoice_created_at: new Date().toISOString(),
-            dux_invoice_error: null,
+            dux_invoice_error: undefined,
           },
         });
 
@@ -220,7 +236,9 @@ export default () => {
       attempts: number
     ): Promise<void> {
       try {
-        await strapi.entityService.update('api::order.order' as any, orderId, {
+        const documentId = await this.getOrderDocumentId(orderId);
+        await strapi.documents('api::order.order').update({
+          documentId,
           data: {
             dux_invoice_status: 'failed',
             dux_invoice_error: errorMessage,
@@ -239,7 +257,9 @@ export default () => {
      */
     async updateOrderAttempts(orderId: number, attempts: number): Promise<void> {
       try {
-        await strapi.entityService.update('api::order.order' as any, orderId, {
+        const documentId = await this.getOrderDocumentId(orderId);
+        await strapi.documents('api::order.order').update({
+          documentId,
           data: {
             dux_invoice_status: 'retrying',
             dux_invoice_attempts: attempts,
