@@ -53,13 +53,11 @@ export function mapOrderToDuxInvoice(order: StrapiOrder): DuxInvoiceRequest {
 }
 
 /**
- * Calculate total with IVA (21% tax for Argentina)
+ * Calculate total from items (prices already include IVA)
  */
 export function calculateTotal(items: DuxInvoiceItem[]): number {
   return items.reduce((total, item) => {
-    const subtotal = item.cantidad * item.precioUnitario;
-    const iva = (item.iva || 0) / 100;
-    return total + subtotal * (1 + iva);
+    return total + item.cantidad * item.precioUnitario;
   }, 0);
 }
 

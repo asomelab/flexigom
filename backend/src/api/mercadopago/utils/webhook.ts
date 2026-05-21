@@ -8,7 +8,7 @@ import crypto from "crypto";
  * Normalize MercadoPago identification types to match Order schema enum
  * Frontend only sends DNI/CUIT, but MercadoPago may transform them
  */
-function normalizeDocumentType(mpType: string | undefined): 'DNI' | 'CUIT' {
+export function normalizeDocumentType(mpType: string | undefined): 'DNI' | 'CUIT' {
   if (!mpType) return 'DNI';
   const normalized = mpType.toUpperCase().trim();
   // MercadoPago should preserve DNI/CUIT from preference
@@ -237,17 +237,16 @@ export const processPaymentNotification = async (
     );
   }
 
-  // Trigger email notification for approved payments
+  // Trigger email notifications for approved payments
   if (status === "approved" && updatedOrder) {
     try {
       console.log(
-        `[MercadoPago Webhook] Triggering email notification for order ${updatedOrder.id}`
+        `[MercadoPago Webhook] Triggering email notifications for order ${updatedOrder.id}`
       );
 
-      // Import service dynamically or at the top
-      const { sendNewOrderEmail } = require("../../../services/email.service");
+      const { sendNewOrderEmail, sendOrderConfirmationEmail } = require("../../../services/email.service");
 
-      await sendNewOrderEmail({
+      const emailData = {
         customerName: updatedOrder.customer_name,
         customerEmail: updatedOrder.customer_email,
         customerPhone: updatedOrder.customer_phone,
@@ -269,14 +268,22 @@ export const processPaymentNotification = async (
         total: updatedOrder.transaction_amount,
         paymentMethod: updatedOrder.payment_method || "MercadoPago",
         notes: (updatedOrder.metadata as any)?.notes,
-      });
+      };
+
+      // Send team notification
+      await sendNewOrderEmail(emailData);
+
+      // Send customer confirmation
+      if (updatedOrder.customer_email) {
+        await sendOrderConfirmationEmail(emailData);
+      }
 
       console.log(
-        `[MercadoPago Webhook] Email notification sent for order ${updatedOrder.id}`
+        `[MercadoPago Webhook] Email notifications sent for order ${updatedOrder.id}`
       );
     } catch (error) {
       console.error(
-        `[MercadoPago Webhook] Email notification failed for order ${updatedOrder.id}:`,
+        `[MercadoPago Webhook] Email notifications failed for order ${updatedOrder.id}:`,
         error
       );
     }

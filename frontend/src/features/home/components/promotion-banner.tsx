@@ -1,14 +1,9 @@
-import { Skeleton } from "@/components/ui/skeleton";
 import { usePromotionBanner } from "../hooks/use-promotion-banner";
 
 export function PromotionBanner() {
   const { data: banner, isLoading, error } = usePromotionBanner();
 
-  if (isLoading) {
-    return <Skeleton className="h-12 w-full" />;
-  }
-
-  if (error || !banner || !banner.isActive) {
+  if (isLoading || error || !banner || !banner.isActive) {
     return null;
   }
 
