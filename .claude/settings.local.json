@@ -17,7 +17,11 @@
       "Bash(gh pr *)",
       "Bash(git merge *)",
       "Bash(gh repo *)",
-      "Bash(gh api *)"
+      "Bash(gh api *)",
+      "Bash(dig api.flexigomtucuman.com +short)",
+      "Bash(nslookup api.flexigomtucuman.com)",
+      "WebSearch",
+      "WebFetch(domain:www.mercadopago.com.ar)"
     ],
     "deny": [],
     "ask": []
