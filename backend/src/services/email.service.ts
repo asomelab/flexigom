@@ -1,7 +1,5 @@
-import { Resend } from 'resend'
 
 // Initialize Resend with API Key from environment
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 export interface OrderEmailData {
   // Customer data
@@ -43,18 +41,18 @@ export async function sendNewOrderEmail(order: OrderEmailData) {
       `)
       .join('')
 
-    const { data, error } = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || '',
-      to: [process.env.RESEND_TO_EMAIL || ''],
+    await strapi.plugin('email').service('email').send({
+      to: process.env.SMTP_TO_EMAIL,
       subject: `🛍️ Nueva venta #${order.orderId} — $${order.total.toLocaleString('es-AR')}`,
       html: `
         <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
           <!-- Header -->
-          <div style="background-color: #1a1a1a; padding: 30px 20px; text-align: center;">
-            <h1 style="color: #ffffff; margin: 0; font-size: 24px; letter-spacing: 1px; text-transform: uppercase;">
-              Flexigom <span style="color: #ff0000ff;">Ventas</span>
+          <div style="background-color: #94a3b8; padding: 30px 20px; text-align: center;">
+            <img src="https://flexigomtucuman.com/flexigom.png" alt="Logo de Flexigom" style="width: 150px; height: auto; display: block; margin: 0 auto 15px auto;" />
+            <h1 style="color: #ff0000ff; margin: 0; font-size: 24px; letter-spacing: 1px; text-transform: uppercase;">
+              Flexigom Ventas
             </h1>
-            <p style="color: #94a3b8; margin: 10px 0 0 0; font-size: 14px;">Notificación de nueva orden recibida</p>
+            <p style="color: #000000; margin: 10px 0 0 0; font-size: 14px;">Notificación de nueva orden recibida</p>
           </div>
 
           <div style="padding: 30px 25px;">
@@ -129,15 +127,10 @@ export async function sendNewOrderEmail(order: OrderEmailData) {
       `,
     });
 
-    if (error) {
-      console.error('[Email Service] Error sending email via Resend:', error);
-      return { success: false, error };
-    }
-
-    console.log('[Email Service] Notification email sent successfully:', data?.id);
-    return { success: true, data };
+    console.log('[Email Service] Notification email sent successfully via SMTP/Nodemailer');
+    return { success: true };
   } catch (err) {
-    console.error('[Email Service] Unexpected error sending email:', err);
+    console.error('[Email Service] Unexpected error sending email via SMTP:', err);
     return { success: false, error: err };
   }
 }
