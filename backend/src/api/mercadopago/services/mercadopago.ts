@@ -218,6 +218,7 @@ export default () => ({
             external_reference: externalReference,
             payment_status: 'pending',
             payment_method: 'mercadopago',
+            payment_type: 'mercadopago',
             transaction_amount: finalTotal,
             items: mpItems,
             metadata: data.metadata || {},
