@@ -47,7 +47,6 @@ export default ({ env }: { env: any }) => ({
           user: env('SMTP_USERNAME'),
           pass: env('SMTP_PASSWORD'),
         },
-        // Optional: Reject unauthorized SSL certificates if self-signed or debugging
         rejectUnauthorized: env.bool('SMTP_REJECT_UNAUTHORIZED', true),
       },
       settings: {
