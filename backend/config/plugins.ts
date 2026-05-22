@@ -42,13 +42,12 @@ export default ({ env }: { env: any }) => ({
       providerOptions: {
         host: env('SMTP_HOST', 'smtp.gmail.com'),
         port: env.int('SMTP_PORT', 587),
-        secure: false,
+        secure: env.bool('SMTP_SECURE', false),
         auth: {
           user: env('SMTP_USERNAME'),
           pass: env('SMTP_PASSWORD'),
         },
-        // Optional: Reject unauthorized SSL certificates if self-signed or debugging
-        rejectUnauthorized: env.bool('SMTP_REJECT_UNAUTHORIZED', true),
+        rejectUnauthorizzed: env.bool('SMTP_REJECT_UNAUTHORIZED', true),
       },
       settings: {
         defaultFrom: env('SMTP_FROM_EMAIL', 'flexituc@gmail.com'),
