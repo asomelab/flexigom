@@ -47,7 +47,7 @@ export default ({ env }: { env: any }) => ({
           user: env('SMTP_USERNAME'),
           pass: env('SMTP_PASSWORD'),
         },
-        rejectUnauthorized: env.bool('SMTP_REJECT_UNAUTHORIZED', true),
+        rejectUnauthorizzed: env.bool('SMTP_REJECT_UNAUTHORIZED', true),
       },
       settings: {
         defaultFrom: env('SMTP_FROM_EMAIL', 'flexituc@gmail.com'),
