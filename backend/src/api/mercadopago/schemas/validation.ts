@@ -112,17 +112,18 @@ export const webhookQuerySchema = z.object({
 });
 
 // Webhook notification body schema
+// MP sends inconsistent types between test and real payloads — accept both forms
 export const webhookNotificationSchema = z.object({
   action: z.string().optional(),
   api_version: z.string().optional(),
   data: z.object({
-    id: z.string(),
+    id: z.union([z.string(), z.number()]).optional(),
   }).optional(),
   date_created: z.string().optional(),
-  id: z.number().optional(),
+  id: z.union([z.string(), z.number()]).optional(),
   live_mode: z.boolean().optional(),
   type: z.string().optional(),
-  user_id: z.string().optional(),
+  user_id: z.union([z.string(), z.number()]).optional(),
 });
 
 // Type exports
