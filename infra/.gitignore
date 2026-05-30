@@ -1,0 +1,21 @@
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+
+# Variable files with real values (keep the *.example templates)
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+
+# CLI override / plan output
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+*.tfplan
+
+# Keep the provider lock file committed:
+# .terraform.lock.hcl
