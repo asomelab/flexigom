@@ -6,7 +6,7 @@ export default {
       handler: "mercadopago.createPreference",
       config: {
         policies: [],
-        middlewares: [],
+        middlewares: ["api::mercadopago.create-preference-rate-limit"],
       },
     },
     {

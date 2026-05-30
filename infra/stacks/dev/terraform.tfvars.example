@@ -1,0 +1,7 @@
+# Copy to terraform.tfvars and set real values. terraform.tfvars is gitignored.
+
+domain_aliases = ["dev.flexigom.com"]
+
+# Override only if needed:
+# site_bucket_name = "flexigom-frontend-dev"
+# deploy_branch    = "dev"

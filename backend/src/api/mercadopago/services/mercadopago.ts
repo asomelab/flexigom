@@ -94,6 +94,11 @@ export default () => ({
         throw new Error(`Product not found: ${item.productId}`);
       }
 
+      // Reject unpublished / unavailable products
+      if (!product.publishedAt) {
+        throw new Error(`Product not available for purchase: ${item.productId}`);
+      }
+
       const isReinforced = product.has_base_options && item.base_type === "Reforzada";
       const basePrice = isReinforced
         ? Number(product.reinforced_base_price) || Number(product.price) || 0
@@ -231,15 +236,24 @@ export default () => ({
         console.log(`[MercadoPago] Order already exists for external_reference: ${externalReference}, skipping create`);
       }
 
+      // MP requires notification_url to be always present. Resolve it server-side:
+      // 1. Explicit override from request (e.g. ngrok tunnel in dev)
+      // 2. MERCADOPAGO_NOTIFICATION_URL env var (production backend public URL)
+      // 3. Constructed from STRAPI_URL (fallback)
+      const notificationUrl =
+        data.notification_url ||
+        process.env.MERCADOPAGO_NOTIFICATION_URL ||
+        `${process.env.STRAPI_URL || 'http://localhost:1337'}/api/mercadopago/webhook`;
+
       const preferenceBody: any = {
         items: adjustedItems,
         back_urls: { success: successUrl, failure: failureUrl, pending: pendingUrl },
+        notification_url: notificationUrl,
         statement_descriptor: "FLEXIGOM",
         external_reference: externalReference,
       };
 
       if (data.payer) preferenceBody.payer = data.payer;
-      if (data.notification_url) preferenceBody.notification_url = data.notification_url;
       if (data.metadata) preferenceBody.metadata = data.metadata;
 
       const response = await preference.create({ body: preferenceBody });
