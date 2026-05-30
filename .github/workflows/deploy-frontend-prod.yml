@@ -20,7 +20,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: prod
+    environment: "Flexigom / prod"
     defaults:
       run:
         working-directory: frontend
