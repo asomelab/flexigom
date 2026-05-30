@@ -1,0 +1,7 @@
+# Copy to terraform.tfvars and set the real value. terraform.tfvars is gitignored.
+
+root_domain = "flexigom.com"
+
+# Override only if different from defaults:
+# github_org  = "Orbitado"
+# github_repo = "flexigom"
