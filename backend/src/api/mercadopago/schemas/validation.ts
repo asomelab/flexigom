@@ -44,7 +44,8 @@ export const itemSchema = z.object({
   quantity: z
     .number()
     .int("Quantity must be an integer")
-    .positive("Quantity must be greater than 0"),
+    .positive("Quantity must be greater than 0")
+    .max(99, "Quantity cannot exceed 99 units"),
 
   composition: z.string().optional(),
   measurement: z.string().optional(),

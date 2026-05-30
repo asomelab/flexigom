@@ -45,14 +45,18 @@ export const verifyWebhookSignature = (
     .update(manifest)
     .digest("hex");
 
-  const isValid = computedHash === hash;
+  // Timing-safe compare — guard against length mismatch first (invalid hash format)
+  let isValid = false;
+  if (computedHash.length === hash.length) {
+    isValid = crypto.timingSafeEqual(
+      Buffer.from(computedHash, 'hex'),
+      Buffer.from(hash, 'hex')
+    );
+  }
 
   if (!isValid) {
-    console.warn('[MercadoPago Webhook] Signature verification details:');
-    console.warn(`  - Manifest: ${manifest}`);
-    console.warn(`  - Expected hash: ${hash}`);
-    console.warn(`  - Computed hash: ${computedHash}`);
-    console.warn(`  - Secret (first 10 chars): ${secret.substring(0, 10)}...`);
+    // Do NOT log the secret or computed/expected hashes — timing/oracle risk
+    console.warn('[MercadoPago Webhook] Signature verification failed');
   }
 
   return isValid;
@@ -135,20 +139,43 @@ export const processPaymentNotification = async (
   };
 
   let updatedOrder;
+  // Track whether this webhook transitions the order INTO approved for the first time.
+  // Guards Dux invoice, emails, and CAPI — they must fire exactly once.
+  let becomingApproved = false;
 
   if (orders && Array.isArray(orders) && orders.length > 0) {
+    const existingOrder = orders[0];
     console.log(
-      `[MercadoPago Webhook] Found existing order ${orders[0].id} (documentId: ${orders[0].documentId}) - updating (NEW FLOW)`
+      `[MercadoPago Webhook] Found existing order ${existingOrder.id} (documentId: ${existingOrder.documentId}) - updating (NEW FLOW)`
     );
 
+    // Idempotency: only fire side-effects on the transition pending→approved
+    const wasAlreadyApproved = existingOrder.payment_status === 'approved';
+    becomingApproved = status === 'approved' && !wasAlreadyApproved;
+
+    // Amount integrity: compare paid amount to the expected order total
+    const expectedAmount = Number(existingOrder.transaction_amount);
+    const paidAmount = Number(transaction_amount);
+    const AMOUNT_TOLERANCE_ARS = 1; // 1 peso tolerance for float rounding
+    if (status === 'approved' && Math.abs(paidAmount - expectedAmount) > AMOUNT_TOLERANCE_ARS) {
+      console.error(
+        `[MercadoPago Webhook] AMOUNT MISMATCH — expected ${expectedAmount} ARS, paid ${paidAmount} ARS. Order ${existingOrder.id} flagged.`
+      );
+      await strapi.documents("api::order.order").update({
+        documentId: existingOrder.documentId,
+        data: { payment_status: 'in_mediation', mercadopago_data: paymentData },
+      });
+      return null;
+    }
+
     // Get existing webhook notifications and append new one
-    const existingNotifications = orders[0].webhook_notifications || [];
+    const existingNotifications = existingOrder.webhook_notifications || [];
     const updatedNotifications = Array.isArray(existingNotifications)
       ? [...existingNotifications, webhookNotification]
       : [webhookNotification];
 
     updatedOrder = await strapi.documents("api::order.order").update({
-      documentId: orders[0].documentId,
+      documentId: existingOrder.documentId,
       data: {
         ...orderData,
         webhook_notifications: updatedNotifications,
@@ -160,6 +187,8 @@ export const processPaymentNotification = async (
     );
   } else {
     console.log("[MercadoPago Webhook] No existing order found - creating new order (LEGACY FALLBACK)");
+    // Treat creation as "becoming approved" for side-effect guards
+    becomingApproved = status === 'approved';
 
     updatedOrder = await strapi.documents("api::order.order").create({
       data: {
@@ -186,8 +215,8 @@ export const processPaymentNotification = async (
     });
   }
 
-  // Trigger Dux invoice creation for approved payments
-  if (status === "approved" && updatedOrder) {
+  // Trigger Dux invoice creation only on first transition to approved
+  if (becomingApproved && updatedOrder) {
     const duxToken = process.env.DUX_API_TOKEN;
 
     if (duxToken) {
@@ -237,8 +266,8 @@ export const processPaymentNotification = async (
     );
   }
 
-  // Trigger email notifications for approved payments
-  if (status === "approved" && updatedOrder) {
+  // Trigger email notifications only on first transition to approved
+  if (becomingApproved && updatedOrder) {
     try {
       console.log(
         `[MercadoPago Webhook] Triggering email notifications for order ${updatedOrder.id}`
@@ -289,8 +318,8 @@ export const processPaymentNotification = async (
     }
   }
 
-  // Trigger Meta Conversions API Purchase Event
-  if (status === "approved" && updatedOrder) {
+  // Trigger Meta Conversions API Purchase Event only on first transition to approved
+  if (becomingApproved && updatedOrder) {
     try {
       await sendMetaCAPIPurchase(updatedOrder);
     } catch (capiError) {
@@ -332,6 +361,8 @@ async function sendMetaCAPIPurchase(order: any) {
       data: [
         {
           event_name: 'Purchase',
+          // Stable event_id lets Meta dedup server event against browser pixel
+          event_id: order.external_reference || order.id?.toString(),
           event_time: Math.floor(Date.now() / 1000),
           action_source: 'website',
           event_source_url: 'https://www.flexigomtucuman.com/checkout/success',

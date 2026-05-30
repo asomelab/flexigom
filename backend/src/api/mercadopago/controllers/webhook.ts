@@ -3,6 +3,7 @@
  */
 
 import { Context } from 'koa';
+import { webhookQuerySchema, webhookNotificationSchema } from '../schemas/validation';
 
 export default {
   async handleWebhook(ctx: Context) {
@@ -14,12 +15,28 @@ export default {
       'content-type': ctx.request.headers['content-type'],
       'user-agent': ctx.request.headers['user-agent'],
     });
-    console.log('[MercadoPago Webhook] Query params:', ctx.request.query);
-    console.log('[MercadoPago Webhook] Body:', (ctx.request as any).body);
+
+    // Validate query params against known schema — reject malformed early
+    const queryParse = webhookQuerySchema.safeParse(ctx.request.query);
+    if (!queryParse.success) {
+      console.warn('[MercadoPago Webhook] Invalid query params:', queryParse.error.issues);
+      ctx.status = 400;
+      ctx.body = { error: 'Invalid query parameters' };
+      return;
+    }
+
+    // Validate body against known schema
+    const bodyParse = webhookNotificationSchema.safeParse((ctx.request as any).body);
+    if (!bodyParse.success) {
+      console.warn('[MercadoPago Webhook] Invalid body:', bodyParse.error.issues);
+      ctx.status = 400;
+      ctx.body = { error: 'Invalid body' };
+      return;
+    }
 
     const xSignature = ctx.request.headers['x-signature'] as string;
     const xRequestId = ctx.request.headers['x-request-id'] as string;
-    const query = ctx.request.query;
+    const query = queryParse.data;
     const paymentId = query.id || query['data.id'];
     const notificationType = query.topic || query.type;
 
@@ -30,8 +47,9 @@ export default {
       hasRequestId: !!xRequestId,
     });
 
-    // Verify signature (flexible in development)
-    const isDevelopment = process.env.NODE_ENV === 'development';
+    // Allow insecure mode via explicit env flag (not NODE_ENV) to avoid accidental prod bypass.
+    // Set MP_WEBHOOK_INSECURE=true in dev .env when testing without a valid secret.
+    const insecureMode = process.env.MP_WEBHOOK_INSECURE === 'true';
 
     if (xSignature && xRequestId && paymentId) {
       console.log('[MercadoPago Webhook] Attempting signature verification...');
@@ -41,18 +59,13 @@ export default {
         .verifyWebhookSignature(xSignature, xRequestId, paymentId as string);
 
       if (!isValid) {
-        console.warn('[MercadoPago Webhook] Signature verification FAILED');
-
-        // In development, log warning but proceed anyway
-        // In production, reject the request
-        if (!isDevelopment) {
-          console.error('[MercadoPago Webhook] Rejecting webhook due to invalid signature (production mode)');
+        if (!insecureMode) {
+          console.error('[MercadoPago Webhook] Rejecting webhook due to invalid signature');
           ctx.status = 403;
           ctx.body = { error: 'Invalid signature' };
           return;
-        } else {
-          console.warn('[MercadoPago Webhook] Proceeding despite invalid signature (development mode)');
         }
+        console.warn('[MercadoPago Webhook] Signature invalid — proceeding anyway (MP_WEBHOOK_INSECURE=true)');
       } else {
         console.log('[MercadoPago Webhook] Signature verification PASSED');
       }
@@ -63,16 +76,15 @@ export default {
         hasPaymentId: !!paymentId,
       });
 
-      // In production, reject requests without signature
-      if (!isDevelopment && !xSignature) {
-        console.error('[MercadoPago Webhook] Rejecting webhook due to missing signature (production mode)');
+      if (!insecureMode && !xSignature) {
+        console.error('[MercadoPago Webhook] Rejecting webhook due to missing signature');
         ctx.status = 403;
         ctx.body = { error: 'Missing signature' };
         return;
       }
     }
 
-    // Return 200 immediately
+    // Return 200 immediately so MP doesn't retry while we process
     console.log('[MercadoPago Webhook] Sending 200 OK response');
     ctx.status = 200;
     ctx.body = { success: true };
@@ -105,14 +117,35 @@ export default {
         } catch (error: any) {
           console.error('[MercadoPago Webhook] Error during async processing:', error);
 
-          // If payment not found (404), it might be a test payment that doesn't persist
           if (error?.status === 404) {
             console.warn(`[MercadoPago Webhook] Payment ${paymentId} not found in MercadoPago API.`);
-            console.warn('[MercadoPago Webhook] This is common with test payments in sandbox mode.');
-            console.warn('[MercadoPago Webhook] To test the full flow, use a real test card: https://www.mercadopago.com.ar/developers/es/docs/checkout-pro/additional-content/test-cards');
-          } else if (error instanceof Error) {
-            console.error('[MercadoPago Webhook] Error message:', error.message);
-            console.error('[MercadoPago Webhook] Error stack:', error.stack);
+            console.warn('[MercadoPago Webhook] Common with sandbox test payments. Use real test cards: https://www.mercadopago.com.ar/developers/es/docs/checkout-pro/additional-content/test-cards');
+          } else {
+            // Persist a processing-failure marker so a reconcile job can retry
+            try {
+              const errorMessage = error instanceof Error ? error.message : String(error);
+              const orders = await strapi.documents('api::order.order').findMany({
+                filters: { payment_id: paymentId as string },
+                limit: 1,
+              });
+              if (orders && orders.length > 0) {
+                await strapi.documents('api::order.order').update({
+                  documentId: orders[0].documentId,
+                  data: {
+                    payment_status: 'processing_failed',
+                    processing_error: errorMessage,
+                  } as any,
+                });
+                console.warn(`[MercadoPago Webhook] Marked order ${orders[0].id} as processing_failed for reconciliation`);
+              }
+            } catch (updateErr) {
+              console.error('[MercadoPago Webhook] Could not persist processing_failed marker:', updateErr);
+            }
+
+            if (error instanceof Error) {
+              console.error('[MercadoPago Webhook] Error message:', error.message);
+              console.error('[MercadoPago Webhook] Error stack:', error.stack);
+            }
           }
         }
       });
