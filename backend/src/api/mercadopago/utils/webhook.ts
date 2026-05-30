@@ -125,7 +125,11 @@ export const processPaymentNotification = async (
     payment_method: payment_method_id,
     transaction_amount,
     customer_email: payer?.email,
-    customer_name: `${payer?.first_name || ''} ${payer?.last_name || ''}`.trim() || 'CONSUMIDOR FINAL',
+    customer_name: (
+      `${payer?.first_name || ''} ${payer?.last_name || ''}`.trim() ||
+      `${paymentData.additional_info?.payer?.first_name || ''} ${paymentData.additional_info?.payer?.last_name || ''}`.trim() ||
+      'CONSUMIDOR FINAL'
+    ),
     customer_phone: payer?.phone?.number || payer?.phone?.area_code
       ? `${payer.phone.area_code || ''}${payer.phone.number || ''}`
       : '',
