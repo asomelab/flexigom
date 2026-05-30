@@ -34,6 +34,12 @@ variable "deploy_branch" {
   default     = "main"
 }
 
+variable "github_environment_name" {
+  description = "Exact GitHub Environment name used in the workflow (e.g. \"Flexigom / prod\"). When a job specifies an environment, GitHub sets the OIDC sub to repo:<org>/<repo>:environment:<name> instead of the branch-based format."
+  type        = string
+  default     = "Flexigom / prod"
+}
+
 variable "remote_state_bucket" {
   description = "S3 bucket holding the global stack's state."
   type        = string
