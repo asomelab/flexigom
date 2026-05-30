@@ -19,7 +19,7 @@ variable "root_domain" {
 variable "github_org" {
   description = "GitHub organization/owner that hosts the repository."
   type        = string
-  default     = "Orbitado"
+  default     = "asomelab"
 }
 
 variable "github_repo" {
