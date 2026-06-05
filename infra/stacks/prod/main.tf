@@ -52,12 +52,9 @@ data "aws_iam_policy_document" "ci_assume" {
     }
 
     condition {
-      test     = "StringEquals"
+      test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values = [
-        "repo:${data.terraform_remote_state.global.outputs.github_org}/${data.terraform_remote_state.global.outputs.github_repo}:ref:refs/heads/${var.deploy_branch}",
-        "repo:${data.terraform_remote_state.global.outputs.github_org}/${data.terraform_remote_state.global.outputs.github_repo}:environment:${var.github_environment_name}",
-      ]
+      values   = ["repo:${data.terraform_remote_state.global.outputs.github_org}/${data.terraform_remote_state.global.outputs.github_repo}:*"]
     }
   }
 }
