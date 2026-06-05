@@ -1,0 +1,160 @@
+name: Terraform Infrastructure
+
+on:
+  pull_request:
+    branches: [main, dev]
+    paths:
+      - "infra/**"
+      - ".github/workflows/infra.yml"
+  workflow_dispatch:
+    inputs:
+      stack:
+        description: "Stack to operate on"
+        required: true
+        type: choice
+        options:
+          - global
+          - dev
+          - prod
+          - email
+      action:
+        description: "Terraform action"
+        required: true
+        type: choice
+        default: plan
+        options:
+          - plan
+          - apply
+
+# OIDC: required to request the token used to assume the AWS infra role.
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: terraform-${{ github.event_name == 'workflow_dispatch' && inputs.stack || 'pr' }}-${{ github.ref }}
+  cancel-in-progress: false # never cancel in-flight applies
+
+jobs:
+  # --------------------------------------------------------------------------
+  # Plan job: runs on every PR that touches infra/. Plans all stacks in
+  # parallel and posts a combined comment on the PR.
+  # --------------------------------------------------------------------------
+  plan:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        stack: [global, dev, prod, email]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_INFRA_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.9"
+
+      - name: Terraform init
+        working-directory: infra/stacks/${{ matrix.stack }}
+        run: terraform init -input=false
+
+      - name: Terraform validate
+        working-directory: infra/stacks/${{ matrix.stack }}
+        run: terraform validate
+
+      - name: Terraform plan
+        id: plan
+        working-directory: infra/stacks/${{ matrix.stack }}
+        run: |
+          terraform plan -input=false -no-color 2>&1 | tee plan_output.txt
+          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      - name: Post plan comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('infra/stacks/${{ matrix.stack }}/plan_output.txt', 'utf8');
+            const MAX = 60000;
+            const truncated = plan.length > MAX
+              ? plan.slice(0, MAX) + '\n\n... (truncated — see workflow logs for full output)'
+              : plan;
+            const body = [
+              `### Terraform Plan — \`${{ matrix.stack }}\``,
+              '',
+              '```hcl',
+              truncated,
+              '```',
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const marker = `<!-- tf-plan-${{ matrix.stack }} -->`;
+            const existing = comments.find(c => c.body.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: marker + '\n' + body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: marker + '\n' + body,
+              });
+            }
+
+      - name: Fail if plan failed
+        if: steps.plan.outputs.exit_code != '0'
+        run: exit 1
+
+  # --------------------------------------------------------------------------
+  # Apply job: runs only via workflow_dispatch (manual trigger).
+  # Targets a single stack chosen via the `stack` input.
+  # --------------------------------------------------------------------------
+  apply:
+    if: github.event_name == 'workflow_dispatch' && inputs.action == 'apply'
+    runs-on: ubuntu-latest
+    environment: "Terraform / ${{ inputs.stack }}"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_INFRA_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.9"
+
+      - name: Terraform init
+        working-directory: infra/stacks/${{ inputs.stack }}
+        run: terraform init -input=false
+
+      - name: Terraform apply
+        working-directory: infra/stacks/${{ inputs.stack }}
+        run: terraform apply -auto-approve -input=false
