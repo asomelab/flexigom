@@ -1,0 +1,7 @@
+# Copy to terraform.tfvars and set real values. terraform.tfvars is gitignored.
+
+domain    = "flexigomtucuman.com"
+dmarc_rua = "dmarc@flexigomtucuman.com"
+
+# Override only if needed:
+# aws_region = "us-east-1"

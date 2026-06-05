@@ -1,6 +1,9 @@
 # Copy to terraform.tfvars and set real values. terraform.tfvars is gitignored.
 
-domain_aliases = ["dev.flexigom.com"]
+# No custom domain to start — uses the CloudFront default URL (*.cloudfront.net).
+# Uncomment and set when ready to add the real domain:
+# domain_aliases = ["dev.flexigomtucuman.com"]
+domain_aliases = []
 
 # Override only if needed:
 # site_bucket_name = "flexigom-frontend-dev"

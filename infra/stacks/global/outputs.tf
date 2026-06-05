@@ -22,3 +22,8 @@ output "github_repo" {
   description = "GitHub repo, re-exported for dependent stacks' trust policies."
   value       = var.github_repo
 }
+
+output "terraform_ci_role_arn" {
+  description = "IAM role ARN for the Terraform CI workflow (infra.yml). Set as AWS_INFRA_ROLE_ARN in GitHub repo variables."
+  value       = aws_iam_role.terraform_ci.arn
+}

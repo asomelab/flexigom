@@ -1,7 +1,9 @@
 # Copy to terraform.tfvars and set the real value. terraform.tfvars is gitignored.
 
-root_domain = "flexigom.com"
+# No domain to start — leave empty to skip Route53 hosted zone.
+# Set to "flexigomtucuman.com" when ready to migrate DNS.
+root_domain = ""
 
 # Override only if different from defaults:
-# github_org  = "Orbitado"
+# github_org  = "asomelab"
 # github_repo = "flexigom"
