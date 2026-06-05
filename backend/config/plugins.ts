@@ -38,20 +38,18 @@ export default ({ env }: { env: any }) => ({
   },
   email: {
     config: {
-      provider: 'nodemailer',
+      // Local SES provider: backend/providers/email-ses/index.js
+      // Uses AWS SESv2Client (API, not SMTP). Credentials come from Railway env vars.
+      // See: infra/stacks/email/ for the IAM user and access key.
+      provider: '@flexigom/provider-email-ses',
       providerOptions: {
-        host: env('SMTP_HOST', 'smtp.gmail.com'),
-        port: env.int('SMTP_PORT', 587),
-        secure: env.bool('SMTP_SECURE', false),
-        auth: {
-          user: env('SMTP_USERNAME'),
-          pass: env('SMTP_PASSWORD'),
-        },
-        rejectUnauthorizzed: env.bool('SMTP_REJECT_UNAUTHORIZED', true),
+        accessKeyId: env('AWS_SES_ACCESS_KEY_ID'),
+        secretAccessKey: env('AWS_SES_SECRET_ACCESS_KEY'),
+        region: env('AWS_SES_REGION', 'us-east-1'),
       },
       settings: {
-        defaultFrom: env('SMTP_FROM_EMAIL', 'flexituc@gmail.com'),
-        defaultReplyTo: env('SMTP_REPLY_TO_EMAIL', 'flexituc@gmail.com'),
+        defaultFrom: env('SES_FROM_EMAIL', 'no-reply@flexigomtucuman.com'),
+        defaultReplyTo: env('SES_REPLY_TO_EMAIL', 'no-reply@flexigomtucuman.com'),
       },
     },
   },

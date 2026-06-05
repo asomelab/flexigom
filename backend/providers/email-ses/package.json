@@ -1,0 +1,7 @@
+{
+  "name": "@flexigom/provider-email-ses",
+  "version": "1.0.0",
+  "description": "Strapi v5 email provider using AWS SES API (SESv2Client).",
+  "main": "index.js",
+  "private": true
+}

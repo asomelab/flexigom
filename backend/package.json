@@ -22,11 +22,12 @@
     "setup": "cp env.example .env"
   },
   "dependencies": {
+    "@aws-sdk/client-sesv2": "^3.0.0",
+    "@flexigom/provider-email-ses": "file:./providers/email-ses",
     "@strapi/design-system": "^2.2.0",
     "@strapi/plugin-cloud": "5.23.1",
     "@strapi/plugin-documentation": "^5.23.1",
     "@strapi/plugin-users-permissions": "5.23.1",
-    "@strapi/provider-email-nodemailer": "5.23.1",
     "@strapi/provider-upload-cloudinary": "^5.33.4",
     "@strapi/strapi": "5.23.1",
     "mercadopago": "^2.9.0",
