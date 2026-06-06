@@ -16,6 +16,13 @@ export interface OrderEmailData {
   total: number;
   paymentMethod: string;
   notes?: string;
+  /**
+   * Whether the payment has been confirmed/approved.
+   * true  → "¡Pago confirmado!" wording (MercadoPago approved)
+   * false → "¡Pedido recibido!" wording (manual/pending orders)
+   * Defaults to true when omitted.
+   */
+  paymentConfirmed?: boolean;
 }
 
 /**
@@ -122,9 +129,13 @@ function teamOrderNotificationHtml(order: OrderEmailData): string {
 }
 
 /**
- * Generates the HTML content for the customer order confirmation email
+ * Generates the HTML content for the customer order confirmation email.
+ * When order.paymentConfirmed is false (manual/pending orders) the heading
+ * reads "¡Pedido recibido!" instead of "¡Pago confirmado!".
  */
 function customerOrderConfirmationHtml(order: OrderEmailData): string {
+  const confirmed = order.paymentConfirmed !== false; // default true
+
   const itemsList = order.items
     .map(
       item => `
@@ -137,18 +148,26 @@ function customerOrderConfirmationHtml(order: OrderEmailData): string {
     )
     .join('');
 
+  const headerSubtitle = confirmed ? 'Pago confirmado' : 'Pedido recibido';
+  const greeting = confirmed
+    ? `¡Pago confirmado, ${order.customerName.split(' ')[0]}!`
+    : `¡Recibimos tu pedido, ${order.customerName.split(' ')[0]}!`;
+  const bodyText = confirmed
+    ? 'Tu pago fue procesado correctamente. Nos contactaremos pronto para coordinar la entrega.'
+    : 'Tu pedido fue registrado correctamente. Nos contactaremos pronto para coordinar el pago y la entrega.';
+
   return `
     <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #ebebeb; border-radius: 10px; overflow: hidden;">
       <div style="background-color: #000000; padding: 30px 20px; text-align: center;">
         <h1 style="color: #ffffff; margin: 0; font-size: 24px; letter-spacing: 1px;">
           Flexigom <span style="color: #dc2626;">✓</span>
         </h1>
-        <p style="color: #a0a0a0; margin: 10px 0 0 0; font-size: 14px;">Pedido confirmado</p>
+        <p style="color: #a0a0a0; margin: 10px 0 0 0; font-size: 14px;">${headerSubtitle}</p>
       </div>
 
       <div style="padding: 30px 25px;">
-        <h2 style="color: #111827; font-size: 20px; margin: 0 0 10px 0;">¡Gracias por tu compra, ${order.customerName.split(' ')[0]}!</h2>
-        <p style="color: #737373; font-size: 14px; line-height: 1.6; margin: 0 0 25px 0;">Recibimos tu pedido correctamente. Nos contactaremos pronto para confirmar los detalles de entrega.</p>
+        <h2 style="color: #111827; font-size: 20px; margin: 0 0 10px 0;">${greeting}</h2>
+        <p style="color: #737373; font-size: 14px; line-height: 1.6; margin: 0 0 25px 0;">${bodyText}</p>
 
         <h3 style="color: #111827; font-size: 16px; margin: 0 0 15px 0; padding-left: 10px; border-left: 4px solid #dc2626;">📦 Tu Pedido</h3>
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
@@ -170,9 +189,22 @@ function customerOrderConfirmationHtml(order: OrderEmailData): string {
           </tfoot>
         </table>
 
-        <div style="background-color: #f5f5f5; border-radius: 10px; padding: 20px; margin-bottom: 30px;">
+        <div style="background-color: #f5f5f5; border-radius: 10px; padding: 20px; margin-bottom: 25px;">
           <p style="margin: 0 0 10px 0; color: #737373; font-size: 12px; font-weight: bold;">NÚMERO DE ORDEN</p>
           <p style="margin: 0; color: #111827; font-size: 16px; font-weight: bold;">#${order.orderId}</p>
+        </div>
+
+        <h3 style="color: #111827; font-size: 16px; margin: 0 0 15px 0; padding-left: 10px; border-left: 4px solid #000000;">🚚 Datos de entrega</h3>
+        <div style="background-color: #ffffff; border: 1px solid #ebebeb; border-radius: 10px; padding: 20px; margin-bottom: 25px;">
+          <p style="margin: 0 0 8px 0; color: #475569; font-size: 14px;"><strong>Nombre:</strong> ${order.customerName}</p>
+          <p style="margin: 0 0 8px 0; color: #475569; font-size: 14px;"><strong>Teléfono:</strong> ${order.customerPhone}</p>
+          <p style="margin: 0; color: #475569; font-size: 14px;"><strong>Dirección:</strong> ${order.customerAddress}</p>
+        </div>
+
+        <div style="background-color: #f5f5f5; border-radius: 10px; padding: 20px; margin-bottom: 25px;">
+          <p style="margin: 0 0 5px 0; color: #737373; font-size: 12px; font-weight: bold;">INFORMACIÓN DE PAGO</p>
+          <p style="margin: 0 0 5px 0; color: #111827; font-size: 14px;"><strong>Método:</strong> ${order.paymentMethod}</p>
+          <p style="margin: 0; color: #111827; font-size: 14px;"><strong>Fecha:</strong> ${order.paymentDate}</p>
         </div>
 
         <p style="color: #737373; font-size: 13px; text-align: center; margin: 0;">Si tienes preguntas, no dudes en contactarnos a <strong>flexituc@gmail.com</strong></p>
@@ -199,7 +231,7 @@ export async function sendNewOrderEmail(order: OrderEmailData): Promise<{ succes
       html: teamOrderNotificationHtml(order),
     });
 
-    console.log('[Email Service] Notification email sent successfully via SMTP/Nodemailer');
+    console.log('[Email Service] Notification email sent successfully via SES');
     return { success: true };
   } catch (err) {
     console.error('[Email Service] Unexpected error sending team notification email via SMTP:', err);
@@ -220,7 +252,7 @@ export async function sendOrderConfirmationEmail(order: OrderEmailData): Promise
       html: customerOrderConfirmationHtml(order),
     });
 
-    console.log('[Email Service] Customer confirmation email sent successfully via SMTP/Nodemailer');
+    console.log('[Email Service] Customer confirmation email sent successfully via SES');
     return { success: true };
   } catch (err) {
     console.error('[Email Service] Unexpected error sending customer confirmation email via SMTP:', err);

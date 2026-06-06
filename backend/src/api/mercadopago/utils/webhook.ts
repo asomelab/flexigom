@@ -308,7 +308,7 @@ export const processPaymentNotification = async (
 
       // Send customer confirmation
       if (updatedOrder.customer_email) {
-        await sendOrderConfirmationEmail(emailData);
+        await sendOrderConfirmationEmail({ ...emailData, paymentConfirmed: true });
       }
 
       console.log(

@@ -1,5 +1,6 @@
 import { factories } from '@strapi/strapi';
 import { normalizeDocumentType } from '../../mercadopago/utils/webhook';
+import { sendNewOrderEmail, sendOrderConfirmationEmail } from '../../../services/email.service';
 
 export default factories.createCoreController('api::order.order', ({ strapi }) => ({
   async getTrackingDetails(ctx: any) {
@@ -68,6 +69,37 @@ export default factories.createCoreController('api::order.order', ({ strapi }) =
 
     console.log(`[Order] Created manual order ${order.documentId} (${payment_method}) ref: ${externalRef}`);
 
+    // Build email data from saved order + calculated items
+    const paymentMethodLabel = payment_method === 'transfer' ? 'Transferencia bancaria' : 'Efectivo';
+    const emailData = {
+      customerName: order.customer_name || '',
+      customerEmail: order.customer_email || '',
+      customerPhone: order.customer_phone || '',
+      customerAddress: order.customer_address || '',
+      orderId: order.id.toString(),
+      orderDate: new Date().toLocaleDateString('es-AR'),
+      paymentDate: 'Pendiente',
+      items: (mpItems as any[]).map((item: any) => ({
+        name: item.title,
+        quantity: item.quantity,
+        price: item.unit_price,
+        composicion: item.description?.includes('Composición:')
+          ? item.description.split('Composición:')[1].split('|')[0].trim()
+          : undefined,
+        medida: item.description?.includes('Medida:')
+          ? item.description.split('Medida:')[1].split('|')[0].trim()
+          : undefined,
+      })),
+      total: finalTotal,
+      paymentMethod: paymentMethodLabel,
+      paymentConfirmed: false,
+    };
+
+    // Notify Flexigom team for all manual orders
+    sendNewOrderEmail(emailData).catch((err: any) => {
+      console.error('[Order Controller] Failed to send team notification email:', err);
+    });
+
     if (payment_method === 'transfer' && order.customer_email) {
       const formattedTotal = finalTotal.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
       const htmlTemplate = `
@@ -107,6 +139,13 @@ export default factories.createCoreController('api::order.order', ({ strapi }) =
         html: htmlTemplate,
       }).catch((err: any) => {
         console.error('[Order Controller] Failed to send bank transfer email:', err);
+      });
+    }
+
+    // Cash orders: send customer confirmation via the shared template
+    if (payment_method === 'cash' && order.customer_email) {
+      sendOrderConfirmationEmail(emailData).catch((err: any) => {
+        console.error('[Order Controller] Failed to send cash order confirmation email:', err);
       });
     }
 
