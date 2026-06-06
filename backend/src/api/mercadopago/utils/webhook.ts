@@ -137,7 +137,7 @@ export const processPaymentNotification = async (
     customer_document_type: normalizedDocType,
     customer_fiscal_category: paymentData?.metadata?.customer_fiscal_category || 'CONSUMIDOR_FINAL',
     customer_address: payer?.address?.street_name
-      ? `${payer.address.street_name} ${payer.address.street_number || ''}`.trim()
+      ? `${payer.address.street_name}${payer.address.street_number ? ' ' + payer.address.street_number : ''}${(payer.address as any).zip_code ? ', CP ' + (payer.address as any).zip_code : ''}`
       : '',
     mercadopago_data: paymentData,
   };
@@ -178,11 +178,32 @@ export const processPaymentNotification = async (
       ? [...existingNotifications, webhookNotification]
       : [webhookNotification];
 
+    // Customer identity fields: only backfill empty slots from the MP payment API.
+    // The preference-time save (mercadopago.ts) already persists the real phone/address
+    // collected from the checkout form — the payment API payer rarely carries them, so
+    // spreading orderData here would clobber correct data with empty strings.
+    const existingName = existingOrder.customer_name;
+    const isDefaultName = !existingName || existingName === 'CONSUMIDOR FINAL';
     updatedOrder = await strapi.documents("api::order.order").update({
       documentId: existingOrder.documentId,
       data: {
-        ...orderData,
+        // Payment fields — always update
+        payment_id: paymentId,
+        payment_status: status,
+        payment_method: payment_method_id,
+        transaction_amount,
+        customer_document_type: normalizedDocType,
+        customer_fiscal_category: paymentData?.metadata?.customer_fiscal_category || (existingOrder as any).customer_fiscal_category || 'CONSUMIDOR_FINAL',
+        mercadopago_data: paymentData,
         webhook_notifications: updatedNotifications,
+        // Customer identity — backfill only: preserve non-empty preference-time values
+        customer_email: (existingOrder as any).customer_email || orderData.customer_email || '',
+        customer_name: isDefaultName
+          ? (orderData.customer_name || existingName || 'CONSUMIDOR FINAL')
+          : existingName,
+        customer_phone: (existingOrder as any).customer_phone || orderData.customer_phone || '',
+        customer_address: (existingOrder as any).customer_address || orderData.customer_address || '',
+        customer_dni: (existingOrder as any).customer_dni || orderData.customer_dni || '',
       },
     });
 
@@ -277,13 +298,14 @@ export const processPaymentNotification = async (
         `[MercadoPago Webhook] Triggering email notifications for order ${updatedOrder.id}`
       );
 
-      const { sendNewOrderEmail, sendOrderConfirmationEmail } = require("../../../services/email.service");
+      const { sendNewOrderEmail, sendOrderConfirmationEmail, formatPaymentMethodLabel } = require("../../../services/email.service");
 
       const emailData = {
         customerName: updatedOrder.customer_name,
         customerEmail: updatedOrder.customer_email,
         customerPhone: updatedOrder.customer_phone,
         customerAddress: updatedOrder.customer_address,
+        customerDni: (updatedOrder as any).customer_dni || '',
         orderId: updatedOrder.id.toString(),
         orderDate: new Date().toLocaleDateString("es-AR"),
         paymentDate: new Date().toLocaleDateString("es-AR"),
@@ -299,8 +321,12 @@ export const processPaymentNotification = async (
             : undefined,
         })),
         total: updatedOrder.transaction_amount,
-        paymentMethod: updatedOrder.payment_method || "MercadoPago",
+        paymentMethod: formatPaymentMethodLabel(updatedOrder.payment_method),
         notes: (updatedOrder.metadata as any)?.notes,
+        // MP verification fields for team email
+        externalReference: external_reference,
+        mercadopagoPaymentId: paymentId,
+        paymentStatus: status,
       };
 
       // Send team notification

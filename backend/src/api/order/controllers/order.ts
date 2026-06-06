@@ -1,6 +1,6 @@
 import { factories } from '@strapi/strapi';
 import { normalizeDocumentType } from '../../mercadopago/utils/webhook';
-import { sendNewOrderEmail, sendOrderConfirmationEmail } from '../../../services/email.service';
+import { sendNewOrderEmail, sendOrderConfirmationEmail, brandEmailShell, formatPaymentMethodLabel } from '../../../services/email.service';
 
 export default factories.createCoreController('api::order.order', ({ strapi }) => ({
   async getTrackingDetails(ctx: any) {
@@ -63,19 +63,21 @@ export default factories.createCoreController('api::order.order', ({ strapi }) =
         customer_dni: payer?.identification?.number || '',
         customer_document_type: normalizeDocumentType(payer?.identification?.type),
         customer_fiscal_category: (payer?.fiscalCategory as 'CONSUMIDOR_FINAL' | 'RESPONSABLE_INSCRIPTO' | 'EXENTO' | 'MONOTRIBUTISTA') || 'CONSUMIDOR_FINAL',
-        customer_address: payer?.address || '',
+        customer_address: payer?.address?.street_name
+          ? `${payer.address.street_name}${payer.address.street_number ? ' ' + payer.address.street_number : ''}${payer.address.zip_code ? ', CP ' + payer.address.zip_code : ''}`
+          : '',
       },
     });
 
     console.log(`[Order] Created manual order ${order.documentId} (${payment_method}) ref: ${externalRef}`);
 
     // Build email data from saved order + calculated items
-    const paymentMethodLabel = payment_method === 'transfer' ? 'Transferencia bancaria' : 'Efectivo';
     const emailData = {
       customerName: order.customer_name || '',
       customerEmail: order.customer_email || '',
       customerPhone: order.customer_phone || '',
       customerAddress: order.customer_address || '',
+      customerDni: (order as any).customer_dni || '',
       orderId: order.id.toString(),
       orderDate: new Date().toLocaleDateString('es-AR'),
       paymentDate: 'Pendiente',
@@ -91,7 +93,7 @@ export default factories.createCoreController('api::order.order', ({ strapi }) =
           : undefined,
       })),
       total: finalTotal,
-      paymentMethod: paymentMethodLabel,
+      paymentMethod: formatPaymentMethodLabel(payment_method),
       paymentConfirmed: false,
     };
 
@@ -101,37 +103,40 @@ export default factories.createCoreController('api::order.order', ({ strapi }) =
     });
 
     if (payment_method === 'transfer' && order.customer_email) {
-      const formattedTotal = finalTotal.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
-      const htmlTemplate = `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-          <h2 style="color: #dc2626;">¡Gracias por tu compra!</h2>
-          <p>Tu pedido <strong>#${externalRef}</strong> ha sido registrado con éxito.</p>
-          <p>El total a pagar es: <strong style="font-size: 18px; color: #111827;">${formattedTotal}</strong></p>
-          
-          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 25px 0;">
-            <h3 style="margin-top: 0; color: #111827; border-bottom: 2px solid #ebebeb; padding-bottom: 10px;">Datos Bancarios</h3>
-            <ul style="list-style-type: none; padding-left: 0; line-height: 1.8;">
-              <li><strong>Banco:</strong> Santander</li>
-              <li><strong>Razón Social:</strong> JEHMA S A S</li>
-              <li><strong>CUIT:</strong> 30718933060</li>
-              <li><strong>CC en Pesos:</strong> 069-102470/6</li>
-              <li><strong>CBU:</strong> 0720069420000010247068</li>
-              <li><strong>Alias:</strong> jehmasas</li>
-            </ul>
-          </div>
+      const formattedTotal = `$${finalTotal.toLocaleString('es-AR')}`;
+      const transferBody = `
+        <h2 style="margin: 0 0 10px 0; color: #252525; font-size: 20px; font-weight: 700;">&#161;Grac&#xED;as por tu compra, ${payer?.name || 'cliente'}!</h2>
+        <p style="margin: 0 0 28px 0; color: #8e8e8e; font-size: 14px; line-height: 1.6;">
+          Tu pedido <strong style="color: #252525;">#${externalRef}</strong> fue registrado.
+          Realiz&#225; la transferencia por <strong style="color: #dc2626;">${formattedTotal}</strong> a los datos de abajo y envi&#225; tu comprobante.
+        </p>
 
-          <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 4px; margin: 20px 0; font-size: 14px; color: #78350f; line-height: 1.5;">
-            <strong>⚠️ Recordatorio Importante:</strong> Dispone de un plazo máximo de <strong>48 horas</strong> para realizar la transferencia y enviar su comprobante. Transcurrido este periodo sin recibir la confirmación de pago, el pedido será cancelado automáticamente para liberar el stock reservado.
-          </div>
-          
-          <div style="margin-top: 30px; text-align: center;">
-            <a href="https://wa.me/5493815824678?text=Hola,%20adjunto%20el%20comprobante%20de%20pago%20para%20la%20orden%20${externalRef}" 
-               style="background-color: #25D366; color: white; padding: 14px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 16px;">
-              Enviar comprobante por WhatsApp
-            </a>
-          </div>
+        <p style="margin: 0 0 12px 0; color: #252525; font-size: 15px; font-weight: 700; padding-left: 12px; border-left: 4px solid #dc2626;">&#127974; Datos bancarios</p>
+        <div style="background-color: #f8f8f8; border-radius: 10px; padding: 18px 20px; margin-bottom: 20px;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 4px 0; color: #8e8e8e; font-size: 13px; width: 40%;">Banco</td><td style="padding: 4px 0; color: #252525; font-size: 13px; font-weight: 500;">Santander</td></tr>
+            <tr><td style="padding: 4px 0; color: #8e8e8e; font-size: 13px;">Raz&#243;n Social</td><td style="padding: 4px 0; color: #252525; font-size: 13px; font-weight: 500;">JEHMA S.A.S.</td></tr>
+            <tr><td style="padding: 4px 0; color: #8e8e8e; font-size: 13px;">CUIT</td><td style="padding: 4px 0; color: #252525; font-size: 13px;">30718933060</td></tr>
+            <tr><td style="padding: 4px 0; color: #8e8e8e; font-size: 13px;">CC en Pesos</td><td style="padding: 4px 0; color: #252525; font-size: 13px; font-family: 'Courier New', monospace;">069-102470/6</td></tr>
+            <tr><td style="padding: 4px 0; color: #8e8e8e; font-size: 13px;">CBU</td><td style="padding: 4px 0; color: #252525; font-size: 13px; font-family: 'Courier New', monospace;">0720069420000010247068</td></tr>
+            <tr><td style="padding: 4px 0; color: #8e8e8e; font-size: 13px;">Alias</td><td style="padding: 4px 0; color: #252525; font-size: 13px; font-family: 'Courier New', monospace;">jehmasas</td></tr>
+          </table>
+        </div>
+
+        <div style="background-color: #fffbeb; border: 1px solid #fcd34d; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0; padding: 14px 16px; margin-bottom: 24px;">
+          <p style="margin: 0; color: #78350f; font-size: 13px; line-height: 1.5;">
+            <strong>&#9888;&#65039; Recordatorio importante:</strong> Ten&#233;s un plazo m&#225;ximo de <strong>48 horas</strong> para realizar la transferencia y enviar el comprobante. Pasado ese tiempo, el pedido se cancelar&#225; autom&#225;ticamente.
+          </p>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 8px;">
+          <a href="https://wa.me/5493815824678?text=Hola,%20adjunto%20el%20comprobante%20de%20pago%20para%20la%20orden%20${externalRef}"
+             style="display: inline-block; background-color: #25D366; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 15px;">
+            &#128242; Enviar comprobante por WhatsApp
+          </a>
         </div>
       `;
+      const htmlTemplate = brandEmailShell(transferBody, 'Instrucciones de pago');
 
       strapi.plugin('email').service('email').send({
         to: order.customer_email,

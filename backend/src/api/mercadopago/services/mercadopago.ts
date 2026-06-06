@@ -214,7 +214,7 @@ export default () => ({
           customer_document_type: normalizeDocumentType(data.payer?.identification?.type),
           customer_fiscal_category: (data.metadata?.customer_fiscal_category as 'CONSUMIDOR_FINAL' | 'RESPONSABLE_INSCRIPTO' | 'EXENTO' | 'MONOTRIBUTISTA') || 'CONSUMIDOR_FINAL',
           customer_address: data.payer?.address?.street_name
-            ? `${data.payer.address.street_name} ${data.payer.address.street_number || ''}`.trim()
+            ? `${data.payer.address.street_name}${data.payer.address.street_number ? ' ' + data.payer.address.street_number : ''}${data.payer.address.zip_code ? ', CP ' + data.payer.address.zip_code : ''}`
             : '',
         };
 
