@@ -155,14 +155,16 @@ export const useCheckoutStore = create<CheckoutState>()(
           const shipping = formData.shipping;
           const externalReference = `ORDER-${Date.now()}`;
 
-          const phoneMatch = shipping.phone?.match(/^(\d{2,4})?(\d+)$/);
+          const rawPhone = shipping.phone || '';
+          const digitsOnly = rawPhone.replace(/\D/g, '');
+          const phoneMatch = digitsOnly.match(/^(\d{2,4})?(\d+)$/);
           const payer = {
             name: shipping.firstName,
             surname: shipping.lastName,
             email: shipping.email,
             phone: phoneMatch
-              ? { area_code: phoneMatch[1] || "", number: phoneMatch[2] || shipping.phone }
-              : { area_code: "", number: shipping.phone },
+              ? { area_code: phoneMatch[1] || "", number: phoneMatch[2] || digitsOnly }
+              : { area_code: "", number: digitsOnly || rawPhone },
             identification: {
               type: shipping.documentType,
               number: shipping.documentNumber,

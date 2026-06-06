@@ -95,15 +95,13 @@ export function buildPreferenceRequest(params: {
       };
     }
 
-    // Add phone if provided
+    // Add phone if provided — strip formatting chars before matching
     if (payer.phone) {
-      const phoneMatch = payer.phone.match(/^(\d{2,4})?(\d+)$/);
-      if (phoneMatch) {
-        preferenceRequest.payer.phone = {
-          area_code: phoneMatch[1] || "",
-          number: phoneMatch[2] || payer.phone,
-        };
-      }
+      const digitsOnly = payer.phone.replace(/\D/g, '');
+      const phoneMatch = digitsOnly.match(/^(\d{2,4})?(\d+)$/);
+      preferenceRequest.payer.phone = phoneMatch
+        ? { area_code: phoneMatch[1] || "", number: phoneMatch[2] || digitsOnly }
+        : { area_code: "", number: digitsOnly || payer.phone };
     }
 
     // Add address if provided

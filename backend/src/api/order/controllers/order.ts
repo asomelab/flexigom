@@ -63,9 +63,11 @@ export default factories.createCoreController('api::order.order', ({ strapi }) =
         customer_dni: payer?.identification?.number || '',
         customer_document_type: normalizeDocumentType(payer?.identification?.type),
         customer_fiscal_category: (payer?.fiscalCategory as 'CONSUMIDOR_FINAL' | 'RESPONSABLE_INSCRIPTO' | 'EXENTO' | 'MONOTRIBUTISTA') || 'CONSUMIDOR_FINAL',
-        customer_address: payer?.address?.street_name
-          ? `${payer.address.street_name}${payer.address.street_number ? ' ' + payer.address.street_number : ''}${payer.address.zip_code ? ', CP ' + payer.address.zip_code : ''}`
-          : '',
+        customer_address: typeof payer?.address === 'string'
+          ? payer.address
+          : payer?.address?.street_name
+            ? `${payer.address.street_name}${payer.address.street_number ? ' ' + payer.address.street_number : ''}${payer.address.zip_code ? ', CP ' + payer.address.zip_code : ''}`
+            : '',
       },
     });
 
