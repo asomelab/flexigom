@@ -133,10 +133,12 @@ data "aws_iam_policy_document" "terraform_ci" {
     actions = [
       "iam:CreateRole", "iam:DeleteRole", "iam:GetRole", "iam:ListRoles",
       "iam:PutRolePolicy", "iam:DeleteRolePolicy", "iam:GetRolePolicy", "iam:ListRolePolicies",
+      "iam:ListAttachedRolePolicies", "iam:AttachRolePolicy", "iam:DetachRolePolicy",
       "iam:TagRole", "iam:UntagRole", "iam:UpdateAssumeRolePolicy",
       "iam:CreateUser", "iam:DeleteUser", "iam:GetUser", "iam:TagUser", "iam:UntagUser",
       "iam:CreateAccessKey", "iam:DeleteAccessKey", "iam:ListAccessKeys",
-      "iam:PutUserPolicy", "iam:DeleteUserPolicy", "iam:GetUserPolicy",
+      "iam:PutUserPolicy", "iam:DeleteUserPolicy", "iam:GetUserPolicy", "iam:ListUserPolicies",
+      "iam:ListAttachedUserPolicies",
       "iam:CreateOpenIDConnectProvider", "iam:DeleteOpenIDConnectProvider",
       "iam:GetOpenIDConnectProvider", "iam:ListOpenIDConnectProviders",
       "iam:TagOpenIDConnectProvider", "iam:UpdateOpenIDConnectProviderThumbprint",
