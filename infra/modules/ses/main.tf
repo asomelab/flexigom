@@ -92,6 +92,7 @@ data "aws_iam_policy_document" "ses_send" {
     actions = ["ses:SendEmail", "ses:SendRawEmail"]
     resources = [
       "arn:aws:ses:${var.region}:*:identity/${var.domain}",
+      "arn:aws:ses:${var.region}:*:identity/*",
     ]
   }
 }
