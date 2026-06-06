@@ -19,7 +19,7 @@ variable "environment" {
 variable "domain_aliases" {
   description = "Domains served by the prod site, e.g. [\"flexigom.com\", \"www.flexigom.com\"]. Leave empty ([]) to use the CloudFront default URL."
   type        = list(string)
-  default     = []
+  default     = ["flexigomtucuman.com", "www.flexigomtucuman.com"]
 }
 
 variable "site_bucket_name" {

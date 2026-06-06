@@ -13,7 +13,7 @@ variable "project" {
 variable "root_domain" {
   description = "Root domain to create a Route53 hosted zone for (e.g. \"flexigom.com\"). Leave empty (\"\") to skip DNS and use CloudFront default URLs during initial testing."
   type        = string
-  default     = ""
+  default     = "flexigomtucuman.com"
 }
 
 variable "github_org" {

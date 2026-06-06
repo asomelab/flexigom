@@ -19,7 +19,7 @@ variable "environment" {
 variable "domain_aliases" {
   description = "Domains served by the dev site, e.g. [\"dev.flexigom.com\"]. Leave empty ([]) to use the CloudFront default URL."
   type        = list(string)
-  default     = []
+  default     = ["dev.flexigomtucuman.com"]
 }
 
 variable "site_bucket_name" {
