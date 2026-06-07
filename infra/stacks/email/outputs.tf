@@ -1,3 +1,8 @@
+output "configuration_set_name" {
+  description = "SES configuration set name. Set as SES_CONFIGURATION_SET in Railway backend env."
+  value       = module.ses.configuration_set_name
+}
+
 output "domain_identity_arn" {
   description = "SES domain identity ARN."
   value       = module.ses.domain_identity_arn

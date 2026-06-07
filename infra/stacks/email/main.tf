@@ -20,6 +20,7 @@ data "terraform_remote_state" "global" {
 module "ses" {
   source = "../../modules/ses"
 
+  project        = var.project
   domain         = var.domain
   region         = var.aws_region
   hosted_zone_id = data.terraform_remote_state.global.outputs.hosted_zone_id

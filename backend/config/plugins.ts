@@ -46,11 +46,26 @@ export default ({ env }: { env: any }) => ({
         accessKeyId: env('AWS_SES_ACCESS_KEY_ID'),
         secretAccessKey: env('AWS_SES_SECRET_ACCESS_KEY'),
         region: env('AWS_SES_REGION', 'us-east-1'),
+        // Attributes sends to the SES configuration set so CloudWatch receives
+        // reputation metrics (Reputation.BounceRate / ComplaintRate).
+        // Value: terraform output -raw configuration_set_name (from email stack).
+        configurationSetName: env('SES_CONFIGURATION_SET', ''),
       },
       settings: {
         defaultFrom: env('SES_FROM_EMAIL', 'no-reply@flexigomtucuman.com'),
         defaultReplyTo: env('SES_REPLY_TO_EMAIL', 'no-reply@flexigomtucuman.com'),
       },
+    },
+  },
+
+  // Sentry error tracking — captures unhandled exceptions + manual captures.
+  // Install: cd backend && pnpm add @strapi/plugin-sentry
+  // DSN: create a free project at sentry.io, set SENTRY_DSN in Railway env.
+  sentry: {
+    enabled: !!env('SENTRY_DSN', ''),
+    config: {
+      dsn: env('SENTRY_DSN', ''),
+      sendMetadata: true,
     },
   },
 });

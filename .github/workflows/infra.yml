@@ -17,6 +17,7 @@ on:
           - dev
           - prod
           - email
+          - monitoring
       action:
         description: "Terraform action"
         required: true
@@ -47,7 +48,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        stack: [global, dev, prod, email]
+        stack: [global, dev, prod, email, monitoring]
 
     steps:
       - name: Checkout

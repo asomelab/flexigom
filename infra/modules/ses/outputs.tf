@@ -1,3 +1,8 @@
+output "configuration_set_name" {
+  description = "SES configuration set name. Set as SES_CONFIGURATION_SET in the backend (Railway) env so emails are attributed to this set for reputation tracking."
+  value       = aws_ses_configuration_set.this.name
+}
+
 output "domain_identity_arn" {
   description = "SES domain identity ARN."
   value       = aws_ses_domain_identity.this.arn

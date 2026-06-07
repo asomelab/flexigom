@@ -42,6 +42,11 @@ module.exports = {
       },
     });
 
+    // Optional: attribute sends to a configuration set for CloudWatch reputation
+    // metrics (bounce/complaint tracking). Set SES_CONFIGURATION_SET in Railway env.
+    // Value comes from: cd infra/stacks/email && terraform output configuration_set_name
+    const configurationSetName = providerOptions.configurationSetName || undefined;
+
     return {
       /**
        * Send an email.
@@ -59,6 +64,7 @@ module.exports = {
             BccAddresses: toArray(options.bcc),
           },
           ReplyToAddresses: replyTo ? [replyTo] : undefined,
+          ...(configurationSetName ? { ConfigurationSetName: configurationSetName } : {}),
           Content: {
             Simple: {
               Subject: { Data: options.subject || '(no subject)', Charset: 'UTF-8' },

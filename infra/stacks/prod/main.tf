@@ -24,10 +24,11 @@ data "terraform_remote_state" "global" {
 module "static_site" {
   source = "../../modules/static-site"
 
-  name           = var.site_bucket_name
-  domain_aliases = var.domain_aliases
-  hosted_zone_id = data.terraform_remote_state.global.outputs.hosted_zone_id
-  tags           = local.common_tags
+  name                = var.site_bucket_name
+  domain_aliases      = var.domain_aliases
+  hosted_zone_id      = data.terraform_remote_state.global.outputs.hosted_zone_id
+  access_logs_enabled = true  # CloudFront access logs → flexigom-frontend-prod-logs (30-day expiry)
+  tags                = local.common_tags
 }
 
 # ---------------------------------------------------------------------------

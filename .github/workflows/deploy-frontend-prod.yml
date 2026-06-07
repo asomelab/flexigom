@@ -50,6 +50,9 @@ jobs:
           VITE_STRAPI_URL: ${{ vars.VITE_STRAPI_URL }}
           VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
           VITE_MERCADOPAGO_WEBHOOK_URL: ${{ vars.VITE_MERCADOPAGO_WEBHOOK_URL }}
+          VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
         run: pnpm run build
 
       - name: Configure AWS credentials (OIDC)

@@ -62,6 +62,63 @@ resource "aws_s3_bucket_versioning" "site" {
 }
 
 # ---------------------------------------------------------------------------
+# Access-log bucket — only when access_logs_enabled = true.
+# CloudFront standard logs require the bucket to allow the CloudFront log
+# delivery service principal to write objects. ACL is the mechanism AWS
+# still uses for CloudFront access logs (OAC does not cover log delivery).
+# Objects expire after 30 days to keep storage costs near-zero.
+# ---------------------------------------------------------------------------
+resource "aws_s3_bucket" "logs" {
+  count  = var.access_logs_enabled ? 1 : 0
+  bucket = "${var.name}-logs"
+  tags   = local.module_tags
+}
+
+resource "aws_s3_bucket_public_access_block" "logs" {
+  count  = var.access_logs_enabled ? 1 : 0
+  bucket = aws_s3_bucket.logs[0].id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# ACL must be enabled so CloudFront can write log objects.
+resource "aws_s3_bucket_ownership_controls" "logs" {
+  count  = var.access_logs_enabled ? 1 : 0
+  bucket = aws_s3_bucket.logs[0].id
+
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+
+  depends_on = [aws_s3_bucket_public_access_block.logs]
+}
+
+resource "aws_s3_bucket_acl" "logs" {
+  count  = var.access_logs_enabled ? 1 : 0
+  bucket = aws_s3_bucket.logs[0].id
+  acl    = "log-delivery-write"
+
+  depends_on = [aws_s3_bucket_ownership_controls.logs]
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "logs" {
+  count  = var.access_logs_enabled ? 1 : 0
+  bucket = aws_s3_bucket.logs[0].id
+
+  rule {
+    id     = "expire-cf-logs-30d"
+    status = "Enabled"
+
+    expiration {
+      days = 30
+    }
+  }
+}
+
+# ---------------------------------------------------------------------------
 # ACM certificate — only when a custom domain is provided.
 # ---------------------------------------------------------------------------
 resource "aws_acm_certificate" "site" {
@@ -130,6 +187,16 @@ resource "aws_cloudfront_distribution" "site" {
     domain_name              = aws_s3_bucket.site.bucket_regional_domain_name
     origin_id                = "s3-${aws_s3_bucket.site.id}"
     origin_access_control_id = aws_cloudfront_origin_access_control.site.id
+  }
+
+  dynamic "logging_config" {
+    for_each = var.access_logs_enabled ? [1] : []
+
+    content {
+      include_cookies = false
+      bucket          = aws_s3_bucket.logs[0].bucket_domain_name
+      prefix          = "cloudfront/"
+    }
   }
 
   default_cache_behavior {

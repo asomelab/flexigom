@@ -17,6 +17,18 @@ locals {
 }
 
 # ---------------------------------------------------------------------------
+# Configuration set — enables reputation metrics (Reputation.BounceRate /
+# Reputation.ComplaintRate) published to CloudWatch. The backend sets
+# ConfigurationSetName on every send so emails are attributed to this set.
+# ---------------------------------------------------------------------------
+resource "aws_ses_configuration_set" "this" {
+  name = "${var.project}-config-set"
+
+  reputation_metrics_enabled = true
+  sending_enabled            = true
+}
+
+# ---------------------------------------------------------------------------
 # Domain identity (no verification wait — see module header).
 # ---------------------------------------------------------------------------
 resource "aws_ses_domain_identity" "this" {

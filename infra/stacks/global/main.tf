@@ -127,7 +127,9 @@ data "aws_iam_policy_document" "terraform_ci" {
     resources = ["*"]
   }
 
-  # IAM: create the per-env ci_deploy roles and the ses_sender user.
+  # IAM: create the per-env ci_deploy roles, the ses_sender user, and the
+  # uptime Lambda execution role (monitoring stack). PassRole is required for
+  # Lambda to assume its execution role during creation.
   statement {
     sid = "IAM"
     actions = [
@@ -135,6 +137,7 @@ data "aws_iam_policy_document" "terraform_ci" {
       "iam:PutRolePolicy", "iam:DeleteRolePolicy", "iam:GetRolePolicy", "iam:ListRolePolicies",
       "iam:ListAttachedRolePolicies", "iam:AttachRolePolicy", "iam:DetachRolePolicy",
       "iam:TagRole", "iam:UntagRole", "iam:UpdateAssumeRolePolicy",
+      "iam:PassRole",
       "iam:CreateUser", "iam:DeleteUser", "iam:GetUser", "iam:TagUser", "iam:UntagUser",
       "iam:CreateAccessKey", "iam:DeleteAccessKey", "iam:ListAccessKeys",
       "iam:PutUserPolicy", "iam:DeleteUserPolicy", "iam:GetUserPolicy", "iam:ListUserPolicies",
@@ -144,6 +147,27 @@ data "aws_iam_policy_document" "terraform_ci" {
       "iam:TagOpenIDConnectProvider", "iam:UpdateOpenIDConnectProviderThumbprint",
       "iam:AddClientIDToOpenIDConnectProvider", "iam:RemoveClientIDFromOpenIDConnectProvider",
     ]
+    resources = ["*"]
+  }
+
+  # CloudWatch: manage dashboards, alarms, and custom metrics (uptime canary).
+  statement {
+    sid       = "CloudWatch"
+    actions   = ["cloudwatch:*", "logs:*"]
+    resources = ["*"]
+  }
+
+  # SNS: manage topics and email subscriptions for alerts.
+  statement {
+    sid       = "SNS"
+    actions   = ["sns:*"]
+    resources = ["*"]
+  }
+
+  # Lambda + EventBridge: manage the uptime canary Lambda and its schedule.
+  statement {
+    sid       = "LambdaEventBridge"
+    actions   = ["lambda:*", "events:*"]
     resources = ["*"]
   }
 

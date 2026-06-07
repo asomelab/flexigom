@@ -19,6 +19,12 @@ variable "dmarc_rua" {
   type        = string
 }
 
+variable "project" {
+  description = "Project name. Used to name the SES configuration set."
+  type        = string
+  default     = "flexigom"
+}
+
 variable "iam_user_name" {
   description = "IAM user name for the SES API sender. Used by the backend (Railway) via access keys."
   type        = string

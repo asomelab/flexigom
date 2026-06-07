@@ -33,6 +33,12 @@ variable "spa_fallback" {
   default     = true
 }
 
+variable "access_logs_enabled" {
+  description = "When true, enables CloudFront standard access logs into a dedicated S3 bucket with 30-day expiry. Enable for prod; disable for dev to avoid log costs."
+  type        = bool
+  default     = false
+}
+
 variable "tags" {
   description = "Extra tags applied to taggable resources."
   type        = map(string)
