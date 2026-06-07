@@ -111,6 +111,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs" {
   rule {
     id     = "expire-cf-logs-30d"
     status = "Enabled"
+    filter {}
 
     expiration {
       days = 30
@@ -182,6 +183,9 @@ resource "aws_cloudfront_distribution" "site" {
   aliases             = local.has_domain ? var.domain_aliases : null
   price_class         = var.price_class
   tags                = local.module_tags
+
+  # Wait for the log bucket ACL to be applied before CloudFront validates it.
+  depends_on = [aws_s3_bucket_acl.logs]
 
   origin {
     domain_name              = aws_s3_bucket.site.bucket_regional_domain_name
