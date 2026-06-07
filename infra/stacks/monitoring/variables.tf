@@ -13,7 +13,7 @@ variable "project" {
 variable "alert_email" {
   description = "Email address for alarm notifications. Copy this to AWS Console or set via -var on first apply. AWS will send a confirmation email — click the link."
   type        = string
-  default     = "flexituc@gmail.com"
+  default     = "flexigom@asomelab.com"
 }
 
 variable "backend_health_url" {
