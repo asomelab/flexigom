@@ -19,7 +19,7 @@ variable "alert_email" {
 variable "backend_health_url" {
   description = "Railway backend health check URL (HEAD /_health). Update this if the Railway URL changes or the backend migrates to EC2."
   type        = string
-  default     = "https://flexigom-backoffice.up.railway.app/_health"
+  default     = "https://api.flexigomtucuman.com/_health"
 }
 
 variable "remote_state_bucket" {
